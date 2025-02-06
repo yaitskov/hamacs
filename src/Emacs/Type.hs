@@ -12,7 +12,7 @@ import Foreign.StablePtr
 import Control.Monad.Reader
 import Data.Data hiding(typeOf)
 
-data PState = PState
+newtype PState = PState
   { symbolMap :: IORef (Map Text GlobalEmacsValue)
   }
 

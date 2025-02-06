@@ -26,7 +26,7 @@ module Emacs.Core (
     ) where
 
 import Prelude()
-import Protolude hiding (mkInteger,print)
+import Protolude hiding (Symbol, mkInteger, print)
 import Foreign.C.Types
 import Foreign.StablePtr
 import Emacs.Type
@@ -153,7 +153,7 @@ class ToEmacsValue s => ToEmacsList s where
 instance ToEmacsList EmacsList where
   toEmacsList = pure
 instance ToEmacsValue x => ToEmacsList [x] where
-  toEmacsList xs = EmacsList <$> (join $ mkList <$> mapM toEv xs)
+  toEmacsList xs = EmacsList <$> (mkList =<< mapM toEv xs)
 
 -- Function
 -- tricky

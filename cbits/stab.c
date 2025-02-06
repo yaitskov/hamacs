@@ -1,4 +1,5 @@
 #include <HsFFI.h>
+#include <stdio.h>
 #include <string.h>
 #include <emacs-module.h>
 /* extern void __stginit_Lib(void); */
@@ -7,17 +8,21 @@
 /* Shoudn't declare here. Library user should declare. */
 /* int plugin_is_GPL_compatible; */
 
+int plugin_is_GPL_compatible = 1;
+
 void __attribute__ ((constructor)) my_load(void);
 void __attribute__ ((destructor)) my_unload(void);
 
 // https://www.vex.net/~trebla/haskell/so.xhtml 参照
 void my_load(void) {
   static int argc = 1;
-  static char *argv[] = { "haskelisp", 0}, **argv_ = argv;
+  static char *argv[] = { "elisp-ghci", 0}, **argv_ = argv;
   hs_init(&argc, &argv_);
+  printf("hs_init\n");
 }
 void my_unload(void) {
   hs_exit();
+  printf("hs_exit\n");
 }
 
 /* wrappers */

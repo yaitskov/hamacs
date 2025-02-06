@@ -29,8 +29,8 @@ module Emacs.Internal (
     errorHandle
     ) where
 
-import Prelude()
-import Protolude hiding (mkInteger)
+import Prelude (error)
+import Protolude hiding (mkInteger, typeOf)
 import Control.Exception (displayException)
 import Data.IORef
 import Emacs.Type

@@ -1,0 +1,28 @@
+https://www.reddit.com/r/haskell/comments/p1ervk/trouble_linking_dynamic_library_for_package/
+
+
+libHStext-2.0.2.a(Text.o): requires unsupported dynamic reloc 11; recompile with -fPIC
+
+https://www.hobson.space/posts/haskell-foreign-library/
+
+
+{
+  generic-lens,
+  haskell-lib-pkg,
+  lens,
+  parselib,
+  unliftio,
+}:
+haskell-lib-pkg {
+  name = "adventlib";
+  src = ./../src;
+  haskell-libs = [
+    generic-lens
+    lens
+    parselib
+    unliftio
+  ];
+}
+
+
+https://www.vex.net/~trebla/haskell/so.xhtml
