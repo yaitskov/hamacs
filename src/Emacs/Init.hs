@@ -82,10 +82,13 @@ emacsModuleInit = defmodule "mymodule" $ do
   where
     evalSync :: Text -> EmacsM Int
     evalSync hsCode = do
-      -- mapM_ (setEnv "GHC_PACKAGE_PATH" . unGhcDbPath) =<< packageDatabase
+      -- mapM_ (setEnv "GHC_PACKAGE_PATH" . (<> ":/home/dan/pro/my-emacs/haskelisp/dist-newstyle/build/x86_64-linux/ghc-9.4.7/elisp-ghci-0.1.1.0") . unGhcDbPath) =<< packageDatabase
       HI.unsafeRunInterpreterWithArgs
-        [ "-package", "base"
-        , "-package", "elisp-ghci"
+        [ "-no-user-package-db" -- , "-v"
+        , "-package-env", "-"
+        , "-package-db", "/home/dan/pro/my-emacs/haskelisp/dist-newstyle/packagedb/ghc-9.4.7"
+        , "-package", "base"
+        , "-package", "elisp-ghci" -- elisp-ghci"
         , "-package", "exceptions"
         , "-package", "filepath"
         , "-package", "protolude"
@@ -103,7 +106,7 @@ emacsModuleInit = defmodule "mymodule" $ do
           putStrLn $ "Inside inter Eval [" <> codeAsStr <> "] accessFormHint = " <> toString afh
           HI.set [ HI.languageExtensions HI.:= [HI.NoImplicitPrelude] ]
           HI.loadModules [  "MyModule" ]
-          HI.setImports [ "Prelude", "Control.Monad.Reader", "Emacs", "Emacs.Type", "MyModule" ]
+          HI.setImports [ "Emacs.Type", "MyModule" ]
           -- () <- HI.runStmt codeAsStr -- (HI.as :: EmacsM ())
           -- r :: () <- HI.interpret codeAsStr (HI.as :: ())
           r :: EmacsM () <- HI.unsafeInterpret codeAsStr "EmacsM ()"

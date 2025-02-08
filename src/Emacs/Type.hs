@@ -29,8 +29,12 @@ returnHello = "Hello"
 
 type EmacsM =
   ReaderT Ctx IO
-instance Show (EmacsM ()) where
-  show _ = "EmacsM ()"
+
+getPState :: EmacsM PState
+getPState = asks pstate
+
+-- instance Show (EmacsM ()) where
+--   show _ = "EmacsM ()"
 -- nil について
 --
 -- emacs 内部では nil は文字列で表現できないシンボルとして定義されている。

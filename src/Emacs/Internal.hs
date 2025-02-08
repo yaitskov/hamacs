@@ -26,8 +26,7 @@ module Emacs.Internal (
     mkT,
     --
     funcall,
-    errorHandle,
-    getPState
+    errorHandle
     ) where
 
 import Prelude (error)
@@ -61,10 +60,6 @@ initCtx env = do
 getPStateStablePtr :: EmacsM (StablePtr PState)
 getPStateStablePtr =
   pstateStablePtr <$> ask
-
-getPState :: EmacsM PState
-getPState =
-  pstate <$> ask
 
 getEnv :: EmacsM EmacsEnv
 getEnv =

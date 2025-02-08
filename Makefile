@@ -1,7 +1,5 @@
-test-sync:
+test-sync: build
 	cd integration && make
-
 build:
 	cabal build
-	cabal install  --force-reinstalls --lib
 	sync
