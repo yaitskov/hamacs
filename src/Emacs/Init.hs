@@ -84,7 +84,9 @@ emacsModuleInit = defmodule "mymodule" $ do
       HI.unsafeRunInterpreterWithArgs ["-package", "base"] (
         let codeAsStr = toString hsCode in do
         putStrLn $ "Inside inter Eval [" <> codeAsStr <> "]"
-        HI.setImports [ "Prelude" ]
+        -- HI.set
+        HI.loadModules [ "MyModule" ]
+        HI.setImports [ "Prelude", "MyModule" ]
         r <- HI.runStmt codeAsStr -- (HI.as :: EmacsM ())
         -- r :: () <- HI.unsafeInterpret codeAsStr "IO ()" -- (HI.as :: EmacsM ())
         putStrLn $ "Eval Finished " <> show r) >>=
