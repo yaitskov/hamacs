@@ -5,6 +5,7 @@ module Emacs.Init where
 import Control.Monad.Catch
 import Control.Monad.IO.Unlift
 import Emacs
+import Emacs.Internal
 import Emacs.Prelude
 import Foreign.C.Types
 import Language.Haskell.Interpreter qualified as HI
@@ -14,6 +15,7 @@ import System.FilePath
 import UnliftIO.Concurrent
 import UnliftIO.Directory
 import UnliftIO.STM
+import Unsafe.Coerce
 
 foreign export ccall "emacs_module_init" emacsModuleInit :: EmacsModule
 
@@ -80,22 +82,40 @@ emacsModuleInit = defmodule "mymodule" $ do
   where
     evalSync :: Text -> EmacsM Int
     evalSync hsCode = do
-      mapM_ (setEnv "GHC_PACKAGE_PATH" . unGhcDbPath) =<< packageDatabase
-      HI.unsafeRunInterpreterWithArgs ["-package", "base"] (
+      -- mapM_ (setEnv "GHC_PACKAGE_PATH" . unGhcDbPath) =<< packageDatabase
+      HI.unsafeRunInterpreterWithArgs
+        [ "-package", "base"
+        , "-package", "elisp-ghci"
+        , "-package", "exceptions"
+        , "-package", "filepath"
+        , "-package", "protolude"
+        , "-package", "containers"
+        , "-package", "mtl"
+        , "-package", "hint"
+        , "-package", "relude"
+        , "-package", "stm"
+        , "-package", "text"
+        , "-package", "unliftio"
+        , "-package", "unliftio-core"
+        ] (
         let codeAsStr = toString hsCode in do
-        putStrLn $ "Inside inter Eval [" <> codeAsStr <> "]"
-        -- HI.set
-        HI.loadModules [ "MyModule" ]
-        HI.setImports [ "Prelude", "MyModule" ]
-        r <- HI.runStmt codeAsStr -- (HI.as :: EmacsM ())
-        -- r :: () <- HI.unsafeInterpret codeAsStr "IO ()" -- (HI.as :: EmacsM ())
-        putStrLn $ "Eval Finished " <> show r) >>=
+          afh <- accessFormHint <$> lift getPState
+          putStrLn $ "Inside inter Eval [" <> codeAsStr <> "] accessFormHint = " <> toString afh
+          HI.set [ HI.languageExtensions HI.:= [HI.NoImplicitPrelude] ]
+          HI.loadModules [  "MyModule" ]
+          HI.setImports [ "Prelude", "Control.Monad.Reader", "Emacs", "Emacs.Type", "MyModule" ]
+          -- () <- HI.runStmt codeAsStr -- (HI.as :: EmacsM ())
+          -- r :: () <- HI.interpret codeAsStr (HI.as :: ())
+          r :: EmacsM () <- HI.unsafeInterpret codeAsStr "EmacsM ()"
+          putStrLn  "Eval Finished "
+          lift r
+        ) >>=
        \case
          Left e -> do
            putStrLn $ "Hint failed " <> show e
            pure 111
-         Right r -> do
-           putStrLn $ "Hint succes " <> show r
+         Right () -> do
+           putStrLn $ "Hint succes "
            pure 222
     ping :: TQueue HintReq -> EmacsM Int
     ping q = do

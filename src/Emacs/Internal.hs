@@ -26,7 +26,8 @@ module Emacs.Internal (
     mkT,
     --
     funcall,
-    errorHandle
+    errorHandle,
+    getPState
     ) where
 
 import Prelude (error)
@@ -49,7 +50,7 @@ import GHC.IO.Encoding.UTF8 (utf8)
 initState :: MonadIO m => m PState
 initState = do
   mapRef <- liftIO $ newIORef mempty
-  return $ PState mapRef
+  return $ PState mapRef "Value of AccessFromHint field"
 
 initCtx :: MonadIO m => EmacsEnv -> m Ctx
 initCtx env = do

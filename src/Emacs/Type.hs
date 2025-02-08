@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances #-}
 module Emacs.Type where
 
 import Prelude(Show(..))
@@ -12,8 +13,9 @@ import Foreign.StablePtr
 import Control.Monad.Reader
 import Data.Data hiding(typeOf)
 
-newtype PState = PState
+data PState = PState
   { symbolMap :: IORef (Map Text GlobalEmacsValue)
+  , accessFormHint :: Text
   }
 
 data Ctx = Ctx
@@ -22,9 +24,13 @@ data Ctx = Ctx
   , emacsEnv :: EmacsEnv
   }
 
+returnHello :: Text
+returnHello = "Hello"
+
 type EmacsM =
   ReaderT Ctx IO
-
+instance Show (EmacsM ()) where
+  show _ = "EmacsM ()"
 -- nil について
 --
 -- emacs 内部では nil は文字列で表現できないシンボルとして定義されている。
