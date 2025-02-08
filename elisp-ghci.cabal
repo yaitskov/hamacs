@@ -26,10 +26,17 @@ source-repository head
     location: https://github.com/githubuser/haskelisp
 
 library
+    default-extensions:
+        ImportQualifiedPost
+        LambdaCase
+        NoImplicitPrelude
+        RankNTypes
+        ScopedTypeVariables
     exposed-modules:
         Emacs
         Emacs.Type
         Emacs.Init
+        Emacs.Prelude
         Emacs.Internal
         Emacs.Symbol
         Emacs.Core
@@ -38,10 +45,17 @@ library
         Emacs.NAdvice
     build-depends:
         base >=4.7 && <5,
+        exceptions,
+        filepath,
         protolude,
         containers,
         mtl,
-        text
+        hint,
+        relude,
+        stm,
+        text,
+        unliftio,
+        unliftio-core
     c-sources:
         cbits/stab.c
     default-language: Haskell2010

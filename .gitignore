@@ -2,3 +2,5 @@
 .haddock-ref
 /dist-newstyle
 *#
+log.org
+/result*

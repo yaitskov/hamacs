@@ -26,3 +26,57 @@ haskell-lib-pkg {
 
 
 https://www.vex.net/~trebla/haskell/so.xhtml
+
+foreign import ccall "wrapper" wrapEFunctionStub
+  :: EFunctionStub
+  -> IO (FunPtr EFunctionStub)
+
+
+type EFunctionStub
+  = EmacsEnv
+  -> CPtrdiff     -- number of args
+  -> Ptr (Ptr ()) -- **args
+  -> StablePtr PState
+  -> IO EmacsValue
+
+
+foreign import ccall _make_function
+  :: EmacsEnv
+  -> CPtrdiff
+  -> CPtrdiff
+  -> FunPtr EFunctionStub
+  -> CString
+  -> StablePtr a
+  -> IO EmacsValue
+
+mkFunction :: ([EmacsValue] -> EmacsM EmacsValue) -> Int -> Int -> Text -> EmacsM EmacsValue
+mkFunction f minArity' maxArity' doc' = do
+  let minArity = fromIntegral minArity' :: CPtrdiff
+      maxArity = fromIntegral maxArity' :: CPtrdiff
+  datap <- getPStateStablePtr
+  stubp <- liftIO (wrapEFunctionStub stub)
+  env <- getEnv
+  checkExitStatus . withCString (toS doc') $ \doc ->
+    _make_function env minArity maxArity stubp doc datap
+  where
+    stub :: EFunctionStub
+    stub env nargs args pstatep = errorHandle env $ do
+      pstate <- deRefStablePtr pstatep
+      es <- fmap EmacsValue <$> peekArray (fromIntegral nargs) args
+      runEmacsM (Ctx pstatep pstate env) (f es)
+
+typedef emacs_value (*emacs_function) (emacs_env *env, ptrdiff_t nargs,
+                                       emacs_value *args,
+                                       void *data)
+
+emacs_value (*make_function) (emacs_env *env,
+				ptrdiff_t min_arity,
+				ptrdiff_t max_arity,
+				emacs_value (*func) (emacs_env *env,
+                                                     ptrdiff_t nargs,
+                                                     emacs_value* args,
+                                                     void *data)
+				  EMACS_NOEXCEPT
+                                  EMACS_ATTRIBUTE_NONNULL(1),
+				const char *docstring,
+				void *data)

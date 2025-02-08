@@ -4,9 +4,10 @@ module Emacs.Command
  , defcommand'
  ) where
 
-import Emacs.Core
 import Data.Text
 import Control.Monad (void)
+import Emacs.Core
+import Emacs.Prelude
 
 -- 依存型とか駆使すれば多分 interacvie form と関数の引数の型の整合性が
 -- 取れていることが多分保証できる。

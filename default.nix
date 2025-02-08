@@ -10,6 +10,7 @@ let
       allowUnfree = true;
     };
   };
+  inherit (pkgs.haskell.lib) dontHaddock;
   inherit (pkgs) lib;
   hsPkgSetOverlay = pkgs.callPackage ./nix/haskell/overlay.nix {
     inherit (nix) sources;
@@ -17,11 +18,13 @@ let
 
   sources = [
     "^src.*$"
+    "^LICENSE$"
+    "^cbits.*$"
     "configure$"
     "^.*\\.cabal$"
   ];
 
-  base = hsPkgs.callCabal2nix "elisp-ghci" (lib.sourceByRegex ./. sources) { };
+  base = dontHaddock (hsPkgs.callCabal2nix "elisp-ghci" (lib.sourceByRegex ./. sources) { });
   elisp-ghci-overlay = _hf: _hp: { elisp-ghci = base; };
   baseHaskellPkgs = pkgs.haskell.packages.${ghc};
   hsOverlays = [ hsPkgSetOverlay elisp-ghci-overlay ];
