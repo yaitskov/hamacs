@@ -1,8 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Emacs.NAdvice where
 
-import Prelude()
-import Protolude
+
+import Cases (spinalize)
+-- import Protolude
+import Relude
 import Emacs.Core
 
 -- Emacs 24 からアドバイスの機構が一新された(nadvice.el)。以前より大幅
@@ -41,10 +43,12 @@ data Where
   | AfterUntil
   | FilterArgs
   | FIlterReturn
+  deriving (Show, Eq, Ord, Enum)
 
 whereToKeyword :: Where -> Keyword
-whereToKeyword Around = Keyword "around"
-whereToKeyword Before = Keyword "before"
+whereToKeyword = Keyword . spinalize . show
+
+-- whereToKeyword Before = Keyword "before"
 
 -- TODO: FUNCTION は シンボルでないと駄目？ -> いや、関数でもOK
 -- 存在しないシンボルに対しても設定できる。
@@ -76,5 +80,7 @@ around name ff = do
             res <- call (newf (funcall func args)) args
             case res of
               Right ev -> return ev
-              Left   _ -> undefined
+              -- TODO: convert EmacsValue to m String somehow
+              Left  e -> fail $ "Funcall " <> show name <> " failed with " <> show e
+          wf [] = fail $ "Empty list [" <> show name <> "]"
       in EmacsFunction <$> mkFunction wf 0 1000 "around advice"

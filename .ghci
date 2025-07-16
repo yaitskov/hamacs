@@ -1,0 +1,14 @@
+-- -fobject-code is required to load project in GHCI and avoid following error:
+--     • Illegal foreign declaration: requires one of these back ends:
+--       native code generator, LLVM, compiling via C,
+--       compiling to JavaScript, or no code generated
+--     • When checking declaration:
+--         foreign export ccall "emacs_module_init" emacsModuleInit
+--           :: EmacsModule
+--    |
+-- 20 | foreign export ccall "emacs_module_init" emacsModuleInit :: EmacsModule
+
+-- Note that passing it as a command-line argument has no effect
+:set -fobject-code
+
+:set -XOverloadedStrings

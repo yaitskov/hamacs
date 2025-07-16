@@ -1,0 +1,70 @@
+cabal-version: 3.8
+name: hamacs
+version: 0.0.1
+build-type: Configure
+license: GPL-3.0-only
+license-file: LICENSE
+copyright: 2025 Daniil Iaitskov
+maintainer: dyaitskov@gmail.com
+homepage: http://github.com/yaitskov/hamacs
+synopsis: Haskell as Emacs embedded scripting launguage
+description:
+    Hamacs is not first project trying to marry Haskell with Emacs.
+    Previous attempts assumed Hasell modules compilation into a shared libary.
+    This requirement makes extensions in Haskell to clumsy in comperison with native Lisp extensions.
+    The second reason prompted me to write the extension is non-inclusive Melpa policy for publishing extensions.
+    I wrote a few Emacs modules in its Lisp dialect (color-mode, bullet-proof-general, niv-mode),
+    and besides filibaster of review process,  I had terrible experience while debugging Lisp code.
+    Based on haskelisp project of Takenari Shinohara.
+category: Editor, Emacs
+author: Daniil Iaitskov
+
+extra-tmp-files:     eval.buildinfo
+
+extra-source-files:
+    README.md
+    configure
+    cbits/*.c
+    cbits/*.h
+
+source-repository head
+    type: git
+    location: https://github.com/yaitskov/hamacs
+
+library
+    default-extensions:
+        ImportQualifiedPost
+        LambdaCase
+        NoImplicitPrelude
+        RankNTypes
+        ScopedTypeVariables
+    exposed-modules:
+        Emacs
+        Emacs.Type
+        Emacs.Init
+        Emacs.Prelude
+        Emacs.Internal
+        Emacs.Symbol
+        Emacs.Core
+        Emacs.Function
+        Emacs.Command
+        Emacs.NAdvice
+    build-depends:
+      , base >=4.7 && <5
+      , cases
+      , containers
+      , exceptions
+      , filepath
+      , hint
+      , mtl
+      , relude
+      , stm
+      , text
+      , unliftio
+      , unliftio-core
+    c-sources:
+        cbits/stab.c
+    default-language: GHC2024
+    ghc-options: -Wall -threaded
+    include-dirs: cbits/
+    hs-source-dirs: src

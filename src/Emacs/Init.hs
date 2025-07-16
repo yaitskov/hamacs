@@ -5,7 +5,7 @@ module Emacs.Init where
 import Control.Monad.Catch
 import Control.Monad.IO.Unlift
 import Emacs
-import Emacs.Internal
+import Emacs.Internal ()
 import Emacs.Prelude
 import Foreign.C.Types
 import Language.Haskell.Interpreter qualified as HI
@@ -15,7 +15,7 @@ import System.FilePath
 import UnliftIO.Concurrent
 import UnliftIO.Directory
 import UnliftIO.STM
-import Unsafe.Coerce
+-- import Unsafe.Coerce
 
 foreign export ccall "emacs_module_init" emacsModuleInit :: EmacsModule
 
@@ -65,7 +65,7 @@ initHint = do
 
 emacsModuleInit :: EmacsModule
 emacsModuleInit = defmodule "mymodule" $ do
-  Hint q hintid <- initHint
+  Hint q _hintid <- initHint
   defun "mysquare" $ \i -> do
     message "haskell squre function called"
     return (i*i :: Int)
@@ -82,16 +82,16 @@ emacsModuleInit = defmodule "mymodule" $ do
   where
     evalSync :: Text -> EmacsM Int
     evalSync hsCode = do
-      -- mapM_ (setEnv "GHC_PACKAGE_PATH" . (<> ":/home/dan/pro/my-emacs/haskelisp/dist-newstyle/build/x86_64-linux/ghc-9.4.7/elisp-ghci-0.1.1.0") . unGhcDbPath) =<< packageDatabase
+      -- mapM_ (setEnv "GHC_PACKAGE_PATH" . (<> ":/home/dan/pro/haskell/my/hamacs/dist-newstyle/build/x86_64-linux/ghc-9.4.7/hamacs-0.0.1") . unGhcDbPath) =<< packageDatabase
       HI.unsafeRunInterpreterWithArgs
         [ "-no-user-package-db" -- , "-v"
         , "-package-env", "-"
-        , "-package-db", "/home/dan/pro/my-emacs/haskelisp/dist-newstyle/packagedb/ghc-9.4.7"
+        , "-package-db", "/home/dan/pro/haskell/my/hamacs/dist-newstyle/packagedb/ghc-9.12.2"
         , "-package", "base"
-        , "-package", "elisp-ghci" -- elisp-ghci"
+        , "-package", "hamacs"
         , "-package", "exceptions"
         , "-package", "filepath"
-        , "-package", "protolude"
+        , "-package", "cases"
         , "-package", "containers"
         , "-package", "mtl"
         , "-package", "hint"

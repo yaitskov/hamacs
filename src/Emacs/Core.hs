@@ -26,19 +26,20 @@ module Emacs.Core (
     ) where
 
 import Prelude()
-import Protolude hiding (Symbol, mkInteger, print)
-import Foreign.C.Types
-import Foreign.StablePtr
+-- import Protolude hiding (Symbol, mkInteger, print)
+import Relude  hiding (print)
+-- import Foreign.C.Types
+-- import Foreign.StablePtr
 import Emacs.Type
 import Emacs.Internal
 
 -- emacsModuleInit に渡す関数
 defmodule :: Text -> EmacsM a -> EmacsModule
-defmodule name mod ert = do
+defmodule name mod' ert = do
   env <- getEmacsEnvFromRT ert
-  errorHandle env $ do
+  _ <- errorHandle env $ do
     ctx <- initCtx env
-    runEmacsM ctx $ mod >> funcall1 "provide" (Symbol name)
+    runEmacsM ctx $ mod' >> funcall1 "provide" (Symbol name)
   return 0
 
 -- 関数の引数に ToEmacsValue を受け取るようにすると便利なんだけど、問
@@ -250,7 +251,7 @@ instance {-# OVERLAPPING #-} (FromEmacsValue a, Callable b) => Callable (a -> b)
     av <- fromEv e
     call (f av) es
   call _ [] = pure $ Left "Too less arguments"
-  arity f = arity (f undefined) + 1
+  arity f = arity (f (error "Callable (a -> b)")) + 1
 
 -- 多相的な関数は怒られるはず。
 mkFunctionFromCallable :: Callable f => f -> EmacsM EmacsValue
@@ -263,7 +264,7 @@ mkFunctionFromCallable f = do
       res <- call f es
       case res of
         Right ev -> return ev
-        Left _   -> undefined
+        Left e -> fail $ "mkFunctionFromCallable failed for f with " <> show (length es) <> " args: " <> show e
 
 evalString :: Text -> EmacsM EmacsValue
 evalString t =

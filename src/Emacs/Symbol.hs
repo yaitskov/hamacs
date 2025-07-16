@@ -1,20 +1,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Emacs.Symbol where
 
-import Prelude()
-import Protolude
+-- import Prelude()
+-- import Protolude
+import Relude
 import Emacs.Core
-import Data.IORef
+-- import Data.IORef
 
 -- All symbols
 --
 -- obarray に設定されている全てのシンボルを取得する。
--- Use `mapatoms` functoin.
+-- Use `mapatoms` function.
 allSymbols :: EmacsM [EmacsValue]
 allSymbols = do
   ref <- liftIO $ newIORef []
   -- funcall1 "mapatoms" =<< mkFunctionFromCallable (accum ref)
-  funcall1 "mapatoms" (accum ref)
+  _ <- funcall1 "mapatoms" (accum ref)
   liftIO $ readIORef ref
   where
     accum :: IORef [EmacsValue] -> EmacsValue -> IO ()

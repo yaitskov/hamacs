@@ -3,7 +3,8 @@
 module Emacs.Function where
 
 import Prelude()
-import Protolude
+-- import Protolude
+import Relude
 import Emacs.Core
 
 --  関数の設定
@@ -14,8 +15,8 @@ setFunction name f = do
 
 --  より elisp に近い形で記述したいのであればこちら
 defun' :: Text -> Doc -> Arity -> ([EmacsValue] -> EmacsM EmacsValue) -> EmacsM ()
-defun' name (Doc doc) (Arity arity) f =
-  setFunction name =<< mkFunction f arity arity doc
+defun' name (Doc doc) (Arity a) f =
+  setFunction name =<< mkFunction f a a doc
 
 defun :: Callable f => Text -> f -> EmacsM ()
 defun name f =

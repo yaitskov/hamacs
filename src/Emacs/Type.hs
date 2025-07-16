@@ -5,12 +5,14 @@
 module Emacs.Type where
 
 import Prelude(Show(..))
-import Protolude hiding (show)
-import Data.IORef
+-- import Protolude hiding (show)
+import Relude hiding (show)
+-- import Data.IORef
 import GHC.Ptr
 import Foreign.C.Types
 import Foreign.StablePtr
-import Control.Monad.Reader
+import Foreign.Storable
+-- import Control.Monad.Reader
 import Data.Data hiding(typeOf)
 
 data PState = PState

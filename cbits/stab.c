@@ -16,7 +16,7 @@ void __attribute__ ((destructor)) my_unload(void);
 // https://www.vex.net/~trebla/haskell/so.xhtml 参照
 void my_load(void) {
   static int argc = 1;
-  static char *argv[] = { "elisp-ghci", 0}, **argv_ = argv;
+  static char *argv[] = { "hamacs", 0}, **argv_ = argv;
   hs_init(&argc, &argv_);
   printf("hs_init\n");
 }

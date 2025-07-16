@@ -5,7 +5,7 @@ module Emacs.Command
  ) where
 
 import Data.Text
-import Control.Monad (void)
+-- import Control.Monad (void)
 import Emacs.Core
 import Emacs.Prelude
 
@@ -15,7 +15,7 @@ import Emacs.Prelude
 -- これは直接は使って欲くないため、' postfix を付けている。
 -- EmacsValue を引数として取っているので function 以外のものを渡せてしまう
 setCommand :: Text -> InteractiveForm -> EmacsValue -> EmacsM ()
-setCommand fname form f = do
+setCommand fname _form f = do
   fnameQ <- intern fname
   interactiveFormQ <- intern "interactive-form"
   void $ funcall2 "fset" fnameQ f
@@ -29,5 +29,5 @@ defcommand'
   -> Arity
   -> ([EmacsValue] -> EmacsM EmacsValue)
   -> EmacsM ()
-defcommand' fname (Doc doc) form (Arity arity) f =
-  setCommand fname form =<< mkFunction f arity arity doc
+defcommand' fname (Doc doc) form (Arity comArity) f =
+  setCommand fname form =<< mkFunction f comArity comArity doc

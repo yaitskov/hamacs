@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Emacs.Internal (
     module Emacs.Type,
+    nonLocalExitThrow,
     initState,
     initCtx,
     getEnv,
@@ -29,10 +30,12 @@ module Emacs.Internal (
     errorHandle
     ) where
 
-import Prelude (error)
-import Protolude hiding (mkInteger, typeOf)
-import Control.Exception (displayException)
-import Data.IORef
+-- import Prelude (error)
+-- import Protolude hiding (mkInteger, typeOf)
+import Data.Text.Foreign qualified as TF
+import Relude -- hiding (mkInteger, typeOf)
+import Control.Exception (catch, throwIO)
+-- import Data.IORef
 import Emacs.Type
 import qualified Data.List as List
 import qualified Data.Map as Map
@@ -43,8 +46,8 @@ import Foreign.Storable
 import Foreign.Marshal.Array
 import Foreign.Marshal.Alloc
 import GHC.Ptr
-import qualified GHC.Foreign as GHC
-import GHC.IO.Encoding.UTF8 (utf8)
+-- import qualified GHC.Foreign as GHC
+-- import GHC.IO.Encoding.UTF8 (utf8)
 
 initState :: MonadIO m => m PState
 initState = do
@@ -132,6 +135,8 @@ foreign import ccall _copy_string_contents
   -> Ptr CPtrdiff    -- Length
   -> IO CInt
 
+-- toS = id -- toString
+
 extractString :: EmacsValue -> EmacsM Text
 extractString ev = do
   env <- getEnv
@@ -139,11 +144,11 @@ extractString ev = do
     result <- _copy_string_contents env ev nullPtr length'
     if result == 1
       then do
-        length <- fromIntegral <$> peek length'
-        allocaBytes length $ \buffer -> do
-          result' <- _copy_string_contents env ev buffer length'
-          if result == 1
-            then toS <$> GHC.peekCString utf8 buffer
+        length'' <- fromIntegral <$> peek length'
+        allocaBytes length'' $ \buffer -> do
+          _result' <- _copy_string_contents env ev buffer length'
+          if result == 1 -- ??
+            then TF.peekCString buffer
             else pure ""
       else pure ""
 
@@ -198,7 +203,7 @@ mkFunction f minArity' maxArity' doc' = do
   datap <- getPStateStablePtr
   stubp <- liftIO (wrapEFunctionStub stub)
   env <- getEnv
-  checkExitStatus . withCString (toS doc') $ \doc ->
+  checkExitStatus . TF.withCString doc' $ \doc ->
     _make_function env minArity maxArity stubp doc datap
   where
     stub :: EFunctionStub
@@ -251,7 +256,7 @@ errorHandle env action =
         -- 例外が飛んでしまう。
         nil <- mkNil
         when (funcallExit == EmacsFuncallExitReturn) $ do
-          mes <- mkString (toS $ displayException e)
+          mes <- mkString (toText $ displayException e)
           arg <- mkList [mes]
           sym <- intern "haskell-error"
           nonLocalExitSignal sym arg -- これ以降 emacs関数を呼んでは駄目
@@ -262,6 +267,7 @@ errorHandle env action =
       let setter = case funcallExit of
                      EmacsFuncallExitSignal -> _non_local_exit_signal
                      EmacsFuncallExitThrow -> _non_local_exit_throw
+                     _ -> error $ "Enexpected " <> show e
       setter env a0 a1
       return a0
 
@@ -306,7 +312,7 @@ foreign import ccall _make_string
 mkString :: Text -> EmacsM EmacsValue
 mkString str = do
   env <- getEnv
-  checkExitStatus . withCStringLen (toS str) $ \(cstr,len) ->
+  checkExitStatus . TF.withCStringLen str $ \(cstr,len) ->
     _make_string env cstr (fromIntegral len)
 
 -- Symbol
@@ -338,8 +344,7 @@ intern str = do
   where
     lookupCache = do
       mapRef <- symbolMap <$> getPState
-      map <- liftIO $ readIORef mapRef
-      return $ Map.lookup str map
+      Map.lookup str <$> (liftIO $ readIORef mapRef)
 
     -- TODO: 現在は全部入れているけど、これはまずい
     storeToCache ev = do
@@ -350,7 +355,7 @@ intern str = do
 
     create = do
       env <- getEnv
-      checkExitStatus . withCString (toS str) $ \cstr -> _intern env cstr
+      checkExitStatus . TF.withCString str $ \cstr -> _intern env cstr
 
 -- 単一の値しかないので引数は不要。どうやって取得するだろ？
 -- nil という定数が nil を持っている。

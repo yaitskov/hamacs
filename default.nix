@@ -1,5 +1,5 @@
 { system ? builtins.currentSystem or "x86_64-linux"
-, ghc ? "ghc947"
+, ghc ? "ghc9122"
 }:
 
 let
@@ -24,10 +24,10 @@ let
     "^.*\\.cabal$"
   ];
 
-  base = dontHaddock (hsPkgs.callCabal2nix "elisp-ghci" (lib.sourceByRegex ./. sources) { });
-  elisp-ghci-overlay = _hf: _hp: { elisp-ghci = base; };
+  base = dontHaddock (hsPkgs.callCabal2nix "hamacs" (lib.sourceByRegex ./. sources) { });
+  hamacs-overlay = _hf: _hp: { hamacs = base; };
   baseHaskellPkgs = pkgs.haskell.packages.${ghc};
-  hsOverlays = [ hsPkgSetOverlay elisp-ghci-overlay ];
+  hsOverlays = [ hsPkgSetOverlay hamacs-overlay ];
   hsPkgs = baseHaskellPkgs.override (old: {
     overrides =
       builtins.foldl' pkgs.lib.composeExtensions (old.overrides or (_: _: { }))
@@ -38,7 +38,7 @@ let
     (_: { enableSharedExecutables = true; });
 
   shell = hsPkgs.shellFor {
-    packages = p: [ p.elisp-ghci ];
+    packages = p: [ p.hamacs ];
     nativeBuildInputs = (with pkgs; [
       cabal-install
       ghcid
@@ -53,11 +53,11 @@ let
     '';
   };
 
-  elisp-ghci = hsPkgs.elisp-ghci;
+  hamacs = hsPkgs.hamacs;
 in {
   inherit hsPkgs;
   inherit ghc;
   inherit pkgs;
   inherit shell;
-  inherit elisp-ghci;
+  inherit hamacs;
 }
