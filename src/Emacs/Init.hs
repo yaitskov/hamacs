@@ -15,7 +15,7 @@ import System.FilePath
 import UnliftIO.Concurrent
 import UnliftIO.Directory
 import UnliftIO.STM
--- import Unsafe.Coerce
+
 
 foreign export ccall "emacs_module_init" emacsModuleInit :: EmacsModule
 
