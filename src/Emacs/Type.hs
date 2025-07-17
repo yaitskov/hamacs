@@ -1,19 +1,13 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE FlexibleInstances #-}
 module Emacs.Type where
 
 import Prelude(Show(..))
--- import Protolude hiding (show)
 import Relude hiding (show)
--- import Data.IORef
-import GHC.Ptr
-import Foreign.C.Types
-import Foreign.StablePtr
-import Foreign.Storable
--- import Control.Monad.Reader
-import Data.Data hiding(typeOf)
+import GHC.Ptr ( Ptr )
+import Foreign.C.Types ( CInt, CPtrdiff )
+import Foreign.StablePtr ( StablePtr )
+import Foreign.Storable ( Storable )
+import Data.Data ( Data(dataTypeOf), dataTypeConstrs, fromConstr )
 
 data PState = PState
   { symbolMap :: IORef (Map Text GlobalEmacsValue)
@@ -35,19 +29,6 @@ type EmacsM =
 getPState :: EmacsM PState
 getPState = asks pstate
 
--- instance Show (EmacsM ()) where
---   show _ = "EmacsM ()"
--- nil について
---
--- emacs 内部では nil は文字列で表現できないシンボルとして定義されている。
--- globals.h
---
--- #define Qnil builtin_lisp_symbol (0)
---
--- type-of では取得できない。nil は型ではない？かな。多分 type_of に渡
--- すとエラーになる。
---
--- haskell では不便なので ENil という型を導入する。
 data EmacsType = ESymbol
                | EInteger
                | EFunction
@@ -56,8 +37,7 @@ data EmacsType = ESymbol
                | ENil
   deriving (Show, Eq, Data)
 
--- これは emacs 側での正式な名前である必要がある。typeOf が依存してい
--- る。nil は若干嘘が入っている。nil という型は存在しない。
+
 emacsTypeSymbolName :: EmacsType -> Text
 emacsTypeSymbolName ESymbol   = "symbol"
 emacsTypeSymbolName EInteger  = "integer"
@@ -85,24 +65,15 @@ castGlobalToEmacsValue :: GlobalEmacsValue -> EmacsValue
 castGlobalToEmacsValue (GlobalEmacsValue p) =
   EmacsValue p
 
--- EmacsValue Opaque Type :w
---
--- これは導入するべきなのか？
--- 少なくともこれにラップする際は確実に保証できるときのみに
 newtype EmacsSymbol   = EmacsSymbol   EmacsValue
 newtype EmacsKeyword  = EmacsKeyword  EmacsValue
 newtype EmacsCons     = EmacsCons     EmacsValue
 newtype EmacsFunction = EmacsFunction EmacsValue
 newtype EmacsList     = EmacsList     EmacsValue
 
--- Emacs の値に対する Haskell の型
--- 数値や文字列は素直なんだけど、他
--- Nil は空 [] でいいのかな？
 newtype Symbol = Symbol Text
 newtype Keyword = Keyword Text
 data Cons = Cons EmacsValue EmacsValue
-
--- 例外機構
 
 data EmacsFuncallExit
   = EmacsFuncallExitReturn
@@ -119,8 +90,6 @@ instance Show EmacsException where
 
 instance Exception EmacsException
 
--- 関数定義のため必要な型
-
 type EFunctionStub
   = EmacsEnv
   -> CPtrdiff
@@ -130,5 +99,5 @@ type EFunctionStub
 
 data InteractiveForm = InteractiveNoArgs
 
-newtype Doc   = Doc Text   -- ドキュメント(関数など)
-newtype Arity = Arity Int  -- 関数アリティ
+newtype Doc   = Doc Text
+newtype Arity = Arity Int

@@ -212,54 +212,22 @@ mkFunction f minArity' maxArity' doc' = do
       es <- fmap EmacsValue <$> peekArray (fromIntegral nargs) args
       runEmacsM (Ctx pstatep pstate env) (f es)
 
--- Haskell で投げられた例外の対応
---
--- Emacs -> Haskell から呼ばれるところに設置する必要がある。例外が補足
--- できないと恐らく emacs がクラッシュする。非同期例外については考える
--- 必要はない。
---
--- 二つの場合を対処する必要がある(多段)
---
---  1. Haskell 側で例外が発生した
---  2. Haskell から呼び出した emacs 関数の中で signal(or throw)された
---
--- 2. の場合、emacsから返ってきた時に non local exit かどうか確認し、
--- もしそうであれば haskellの例外を投げる。そして haskell -> emacsに戻
--- る場所で haskellの例外は補足する。その場合、non-local-exit は既に設
--- 定されているので、
---
--- _non_local_exit_signal で haskellエラーであることを設定する。ただし
--- これが簡単にはいかず、
---
---   * IO モナドの中で実現する必要がある
---   * emacs関数を呼び出す際に例外が発生しうるものを呼び出せない
---
--- catch する順番重要
 errorHandle :: EmacsEnv -> IO EmacsValue -> IO EmacsValue
 errorHandle env action =
   action `catch` emacsExceptionHandler
          `catch` haskellExceptionHandler
   where
-    -- handler の中で例外が発生した場合は諦め？
-    -- ほんとは ctx はいらなくて、env だけで 対応したいところ
-    -- とりあえずの対応
-    --
-    -- TODO: ハンドラ中に EmacsException が投げられたときは無視しない
-    -- といけな？
     haskellExceptionHandler :: SomeException -> IO EmacsValue
     haskellExceptionHandler e = do
       ctx <- initCtx env
       runEmacsM ctx $ do
         funcallExit <- nonLocalExitCheck
-        -- TODO: これが不味い。既に funcall-exit が signal/throw に設
-        -- 定されている可能性があるため、mkNil で更に EmacsException
-        -- 例外が飛んでしまう。
         nil <- mkNil
         when (funcallExit == EmacsFuncallExitReturn) $ do
           mes <- mkString (toText $ displayException e)
           arg <- mkList [mes]
           sym <- intern "haskell-error"
-          nonLocalExitSignal sym arg -- これ以降 emacs関数を呼んでは駄目
+          nonLocalExitSignal sym arg --
         return nil
 
     emacsExceptionHandler :: EmacsException -> IO EmacsValue
@@ -271,15 +239,6 @@ errorHandle env action =
       setter env a0 a1
       return a0
 
--- emacsモジュール関数の呼び出し後に signal/throwされていないかチェッ
--- クする。されている場合は EmacsException を投げる。
---
--- emacs-module.c の module_* 関数で 先頭にMODULE_FUNCTION_BEGIN が書
--- かれているものが実行の後にチェックが必要。
---
--- TODO: 理想的には チェック必要な import ccal は IONeedCheck a みたい
--- な型を返すようにして、checkExitStatus しないと IO(や EmacsM)に直せ
--- ないようにするのがいいのかな？ただちょっと面倒。
 checkExitStatus :: IO a -> EmacsM a
 checkExitStatus action = do
   v <- liftIO action
@@ -317,22 +276,11 @@ mkString str = do
 
 -- Symbol
 -- https://www.gnu.org/software/emacs/manual/html_node/elisp/Creating-Symbols.html
---
--- intern という名前にしたのは不味い気がしてきた。elispには intern
--- と make-symbol があり意味が違う。intern はシンボルを obarray に登録
--- する(既に登録されていればそれを返す)。make-symbol は全く新しいシン
--- ボルを作成し、obarray には登録しない。
---
--- :foo のようなのは keyword symbol と呼ばれており、自分自身に評価され
--- る。実態としてはただ単に : で前置されたシンボルである。
-
 foreign import ccall _intern
   :: EmacsEnv
   -> CString
   -> IO EmacsValue
 
--- TODO: キャッシュするのは不味い気がしてきた。滅多にないとは思うけど、
--- unintern された場合にの動きが問題となる。
 intern :: Text -> EmacsM EmacsValue
 intern str = do
   s' <- lookupCache
@@ -346,7 +294,7 @@ intern str = do
       mapRef <- symbolMap <$> getPState
       Map.lookup str <$> (liftIO $ readIORef mapRef)
 
-    -- TODO: 現在は全部入れているけど、これはまずい
+
     storeToCache ev = do
       mapRef <- symbolMap <$> getPState
       gev <- mkGlobalRef ev
@@ -357,12 +305,6 @@ intern str = do
       env <- getEnv
       checkExitStatus . TF.withCString str $ \cstr -> _intern env cstr
 
--- 単一の値しかないので引数は不要。どうやって取得するだろ？
--- nil という定数が nil を持っている。
--- (symbol-value 'nil) でいけるかな。(eval 'nil) でもいいかも
---
--- TODO: キャッシュするべきだよね(キャッシュする場合は emacs_value を
--- emacs側でGCされないように global_ref を作る必要があるのかな？
 mkNil :: EmacsM EmacsValue
 mkNil = do
   q0 <- intern "symbol-value"
@@ -375,8 +317,6 @@ mkT = do
   q1 <- intern "t"
   funcall q0 [q1]
 
--- そもそも list という型は emacs側には存在しない。
--- listp という関数があるが、これは cons もしくは nil かどうかを判定している。
 mkList :: [EmacsValue] -> EmacsM EmacsValue
 mkList evs = do
   listQ <- intern "list"
@@ -391,8 +331,6 @@ mkGlobalRef :: EmacsValue -> EmacsM GlobalEmacsValue
 mkGlobalRef ev = do
   env <- getEnv
   checkExitStatus $ _make_global_ref env ev
-
--- 例外ハンドリング
 
 foreign import ccall _non_local_exit_check
  :: EmacsEnv
@@ -434,7 +372,6 @@ nonLocalExitClear = do
   env <- getEnv
   liftIO $ _non_local_exit_clear env
 
--- 第二引数、第三引数に書き込まれることに注意。
 foreign import ccall _non_local_exit_get
   :: EmacsEnv
   -> Ptr EmacsValue

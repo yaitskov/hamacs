@@ -1,14 +1,10 @@
-{-# LANGUAGE ForeignFunctionInterface,UndecidableInstances #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ForeignFunctionInterface, UndecidableInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Emacs.Core (
     module Emacs.Internal,
     defmodule,
-    -- mk
     mkCons,
-    -- funcall
     ToEmacsValue(..),
     ToEmacsSymbol(..),
     ToEmacsFunction(..),
@@ -26,14 +22,13 @@ module Emacs.Core (
     ) where
 
 import Prelude()
--- import Protolude hiding (Symbol, mkInteger, print)
+
 import Relude  hiding (print)
--- import Foreign.C.Types
--- import Foreign.StablePtr
+
 import Emacs.Type
 import Emacs.Internal
 
--- emacsModuleInit に渡す関数
+
 defmodule :: Text -> EmacsM a -> EmacsModule
 defmodule name mod' ert = do
   env <- getEmacsEnvFromRT ert
@@ -42,24 +37,11 @@ defmodule name mod' ert = do
     runEmacsM ctx $ mod' >> funcall1 "provide" (Symbol name)
   return 0
 
--- 関数の引数に ToEmacsValue を受け取るようにすると便利なんだけど、問
--- 題はその引数の実際の値を取得するめに EmacsM の中で実行する必要があ
--- り、引数の実行で例外が発生するかもしれない、ということ。
---
--- ある関数の中でEmacsException例外が発生したときにどのタイミングでど
--- こまで進んだかの保証が得られない。
--- ああ、けど IO での例外でも同じことが言えるのか...
 class ToEmacsValue h where
   toEv :: h -> EmacsM EmacsValue
 
--- misc
--- EmacsM EmacsValue はどうなんだ... いいのかな？いいのであれば、
--- EmacsM EmacsSymbol とかも許容するべきかな。
--- いや、やはりないほうがいいかな。
 instance ToEmacsValue EmacsValue where
   toEv = pure
--- instance ToEmacsValue (EmacsM EmacsValue) where
---   toEv = identity
 
 -- Integer
 instance ToEmacsValue Int where
@@ -111,15 +93,12 @@ instance (FromEmacsValue a, Callable b) => ToEmacsValue (a -> b) where
   toEv = (asEmacsValue<$>) . toEmacsFunction
 
 -- AsEmacsValue
--- これはderiveしたいところ...
 class    AsEmacsValue s             where asEmacsValue :: s -> EmacsValue
 instance AsEmacsValue EmacsSymbol   where asEmacsValue (EmacsSymbol ev) = ev
 instance AsEmacsValue EmacsKeyword  where asEmacsValue (EmacsKeyword ev) = ev
 instance AsEmacsValue EmacsCons     where asEmacsValue (EmacsCons ev) = ev
 instance AsEmacsValue EmacsList     where asEmacsValue (EmacsList ev) = ev
 instance AsEmacsValue EmacsFunction where asEmacsValue (EmacsFunction ev) = ev
-
--- それぞれの OpaqueType への変換
 
 -- Symbol
 class ToEmacsValue s => ToEmacsSymbol s where
@@ -156,9 +135,6 @@ instance ToEmacsList EmacsList where
 instance ToEmacsValue x => ToEmacsList [x] where
   toEmacsList xs = EmacsList <$> (mkList =<< mapM toEv xs)
 
--- Function
--- tricky
--- 無引数関数は明示的にやる必要ある。
 class (Callable s,ToEmacsValue s) => ToEmacsFunction s where
   toEmacsFunction :: s -> EmacsM EmacsFunction
 
@@ -199,11 +175,7 @@ funcall3 fname ev0 ev1 ev2 =
   join $ funcall <$> intern fname
                  <*> sequence [toEv ev0, toEv ev1, toEv ev2]
 
--- Emacs -> Haskell
--- 変換に失敗する場合は例外を飛ばすように
---
--- 現状 EmacsValue を返している関数を、 h を返すようにするのも便利かも
--- しれないが、明示的な型指定する必要が増えるかも。。。
+
 class FromEmacsValue h where
   fromEv :: EmacsValue -> EmacsM h
 
@@ -216,13 +188,9 @@ instance FromEmacsValue Text where
 instance FromEmacsValue EmacsValue where
   fromEv = pure
 
--- TODO: これいいのか？チェック必要ないか？
 instance FromEmacsValue EmacsFunction where
   fromEv = pure . EmacsFunction
 
-
--- 多相的な関数は駄目らしい(具体的な関数ならokらしい)
--- TODO: optional, rest 引数に対応する。
 class Callable a where
     call :: a -> [EmacsValue] -> EmacsM (Either Text EmacsValue)
     arity :: a -> Int
@@ -253,7 +221,7 @@ instance {-# OVERLAPPING #-} (FromEmacsValue a, Callable b) => Callable (a -> b)
   call _ [] = pure $ Left "Too less arguments"
   arity f = arity (f (error "Callable (a -> b)")) + 1
 
--- 多相的な関数は怒られるはず。
+
 mkFunctionFromCallable :: Callable f => f -> EmacsM EmacsValue
 mkFunctionFromCallable f = do
   let a = arity f

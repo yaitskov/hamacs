@@ -1,20 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Emacs.Symbol where
 
--- import Prelude()
--- import Protolude
 import Relude
 import Emacs.Core
--- import Data.IORef
 
--- All symbols
---
--- obarray に設定されている全てのシンボルを取得する。
--- Use `mapatoms` function.
 allSymbols :: EmacsM [EmacsValue]
 allSymbols = do
   ref <- liftIO $ newIORef []
-  -- funcall1 "mapatoms" =<< mkFunctionFromCallable (accum ref)
   _ <- funcall1 "mapatoms" (accum ref)
   liftIO $ readIORef ref
   where
@@ -58,12 +50,6 @@ setDefaultValue :: ToEmacsValue a => Text -> a -> EmacsM EmacsValue
 setDefaultValue name val =
   funcall2 "set-default" (Symbol name) val
 
---  Keyword Symbol
-
---  シンボルは任意の属性を持つことができる。
---
--- 属性テーブルは シンボルと任意の値に間のハッシュである。
--- ただし値として nil は設定できない。未設定とnil に設定は区別されない。
 symbolProperty :: Text -> Text -> EmacsM (Maybe EmacsValue)
 symbolProperty name property = do
   ev <- funcall2 "get" (Symbol name) (Symbol property)
