@@ -11,6 +11,8 @@
 (hint-how-are-you)
 (message (number-to-string (myplus 10 7)))
 (eval-haskell "putStrLn \"Hello Наконец Работает !!!! World\"")
+(eval-haskell "putStrLn \"Second message in the Queue\"")
+(eval-haskell "putStrLn \"Third message in the Queue\"")
 (hint-how-are-you)
 (message (number-to-string (myplus 11111 22222)))
 ;;; run.el ends here

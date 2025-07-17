@@ -15,6 +15,7 @@ import System.FilePath
 import UnliftIO.Concurrent
 import UnliftIO.Directory
 import UnliftIO.STM
+import UnliftIO.Exception
 
 
 foreign export ccall "emacs_module_init" emacsModuleInit :: EmacsModule
@@ -35,30 +36,74 @@ packageDatabase =
   <&> fmap (GhcDbPath . (</> "package.conf.d")) . maybeToList
   >>= filterM (doesDirectoryExist . unGhcDbPath)
 
-hintWorker :: (MonadMask m, MonadIO m) => TQueue HintReq -> m () -- (Either HI.InterpreterError ())
-hintWorker q = do
-  putStrLn "Hint worker is alive"
-  doTheQueue
+hintWorker :: {-(MonadMask m, MonadUnliftIO m) => -} TQueue HintReq -> EmacsM () -- (Either HI.InterpreterError ())
+hintWorker q = catchAny go oops
+  where
+    oops (SomeException se) = putStrLn $ "\nTotal OOPS " <> show se  <> "\n"
+    go = do
+      putStrLn "Hint worker is alive"
+      HI.unsafeRunInterpreterWithArgs
+        [ "-no-user-package-db" -- , "-v"
+        , "-package-env", "-"
+        , "-package-db", "/home/dan/pro/haskell/my/hamacs/dist-newstyle/packagedb/ghc-9.12.2"
+        , "-package", "base"
+        , "-package", "hamacs"
+        , "-package", "exceptions"
+        , "-package", "filepath"
+        , "-package", "cases"
+        , "-package", "containers"
+        , "-package", "mtl"
+        , "-package", "hint"
+        , "-package", "relude"
+        , "-package", "stm"
+        , "-package", "text"
+        , "-package", "unliftio"
+        , "-package", "unliftio-core"
+        ] (do
+          HI.set [ HI.languageExtensions HI.:= [HI.NoImplicitPrelude] ]
+          HI.loadModules [  "MyModule" ]
+          HI.setImports [ "Emacs.Type", "MyModule", "Relude" ]
+          doTheQueue
+          -- () <- HI.runStmt codeAsStr -- (HI.as :: EmacsM ())
+          -- r :: () <- HI.interpret codeAsStr (HI.as :: ())
+          -- r :: EmacsM () <- HI.unsafeInterpret codeAsStr "EmacsM ()"
+          -- putStrLn  "Eval Finished "
+          -- lift r
+        ) >>=
+       \case
+         Left e -> do
+           putStrLn $ "Hint failed " <> show e
+           -- pure 111
+         Right () -> do
+           putStrLn $ "Hint succes "
+           -- pure 222
   -- HI.runInterpreter doTheQueue >>= \case
   --   Left e -> putStrLn $ "Hint failed " <> show e
   --   Right r -> putStrLn $ "Hint succes " <> show r
-  where
+
     doTheQueue = do
       atomically (readTQueue q) >>= \case
         PingHint -> putStrLn "Hint Worker is still alive" >> doTheQueue
         KillHint -> putStrLn "Dead fish"
+        -- afh <- accessFormHint <$> lift getPState
+        -- putStrLn $ "Inside inter Eval [" <> codeAsStr <> "] accessFormHint = " <> toString afh
+
         EvalHsCode code ->
           let codeAsStr = toString code in do
-            putStrLn $ "Eval [" <> codeAsStr <> "]"
+            putStrLn $ "Eval inside Hint [" <> codeAsStr <> "]"
+            r :: EmacsM () <- HI.unsafeInterpret codeAsStr "EmacsM ()"
+            lift r
+            doTheQueue
             -- HI.setImports [ "Prelude" ]
             -- r <- HI.interpret codeAsStr (HI.as :: IO ())
             -- putStrLn $ "Eval Finished " <> show r
-            doTheQueue
 
-initHint :: (MonadMask m, MonadUnliftIO m) => m Hint
+
+initHint :: {-(MonadMask m, MonadUnliftIO m) => -} EmacsM Hint
 initHint = do
   q <- newTQueueIO
-  Hint q <$> forkIO (hintWorker q)
+  -- ctx <- ask
+  Hint q <$> forkIO (hintWorker q) -- runReaderT ctx (hintWorker q))
     -- (\case
     --     Right _ -> putStrLn "Hint Worker stopped successfully"
     --     Left e -> die $ "Hint got exception " <> displayException e)
@@ -106,7 +151,7 @@ emacsModuleInit = defmodule "mymodule" $ do
           putStrLn $ "Inside inter Eval [" <> codeAsStr <> "] accessFormHint = " <> toString afh
           HI.set [ HI.languageExtensions HI.:= [HI.NoImplicitPrelude] ]
           HI.loadModules [  "MyModule" ]
-          HI.setImports [ "Emacs.Type", "MyModule" ]
+          HI.setImports [ "Emacs.Type", "MyModule", "Relude" ]
           -- () <- HI.runStmt codeAsStr -- (HI.as :: EmacsM ())
           -- r :: () <- HI.interpret codeAsStr (HI.as :: ())
           r :: EmacsM () <- HI.unsafeInterpret codeAsStr "EmacsM ()"
