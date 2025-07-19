@@ -42,6 +42,17 @@ modElemToFun = \case Fun x -> Just x ; _ -> Nothing
 modFunctions :: MonadInterpreter m => ModuleName -> m [Id]
 modFunctions mm = mapMaybe modElemToFun <$> HI.getModuleExports mm
 
+isEmacsCompatibleFunction :: MonadInterpreter m => Id -> m Bool
+isEmacsCompatibleFunction fName =
+  HI.typeChecksWithDetails ("mkFunctionFromCallable " <> fName) >>= \case
+    Left es -> do
+      putStrLn $ "Skip " <> fName <> " due: " <> show es
+      pure False
+    Right ok -> do
+      putStrLn $ "Pass " <> fName <> " as " <> ok
+      pure True
+    -- HI.typeChecks $
+
 runHintOn :: TQueue HintReq -> EmacsM ()
 runHintOn q = catchAny go oops
   where
@@ -71,13 +82,17 @@ runHintOn q = catchAny go oops
         ] (do
           HI.set [ HI.languageExtensions HI.:= [HI.NoImplicitPrelude] ]
           HI.loadModules [ exportingModule ]
-          HI.setImports [ "UnliftIO.STM", "Emacs.Type", "Emacs.Hint", "Relude" ]
+          HI.setImports [ "UnliftIO.STM", "Emacs.Type", "Emacs.Core", "Emacs.Hint", "Relude"
+                        , exportingModule
+                        ]
           putStrLn $ "before unsafeInterpret"
           -- list
           fnNames <- modFunctions exportingModule
           printDoc $ hsep ["Functions of",  doc exportingModule, ":"
                             <> linebreak <> tab (vsep fnNames) <> linebreak
                           ]
+          emacsCompatibleOnes <- filterM isEmacsCompatibleFunction fnNames
+          printDoc $ vsep ["Among them Emacs compatible:", tab (vsep emacsCompatibleOnes)] <> linebreak
           r :: StateT (TQueue HintReq) EmacsM () <- HI.unsafeInterpret "runHintQueue" "StateT (TQueue HintReq) EmacsM ()"
           lift (evalStateT r q)
 
