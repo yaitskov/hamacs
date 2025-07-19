@@ -2,13 +2,17 @@
 
 module Emacs.Init where
 
--- import Control.Concurrent
+import Control.Exception (AssertionFailed (..))
 import Control.Monad.Catch
 import Control.Monad.IO.Unlift
+import Data.Map.Strict qualified as M
 import Emacs
 import Emacs.Hint
 import Emacs.Internal ()
 import Emacs.Prelude
+
+import Data.Time.Clock.System
+-- import Data.Time.Format
 
 import Foreign.C.Types
 import Language.Haskell.Interpreter qualified as HI
@@ -16,7 +20,7 @@ import Language.Haskell.Interpreter.Unsafe qualified as HI
 import UnliftIO.Environment
 import System.FilePath
 import System.IO.Unsafe ( unsafePerformIO )
-import UnliftIO.Concurrent ( forkIO )
+import UnliftIO.Concurrent ( forkIO, modifyMVar_)
 import UnliftIO.Directory
 import UnliftIO.STM ( readTQueue, writeTQueue, atomically, newTQueueIO, TQueue )
 import UnliftIO.Exception
@@ -127,6 +131,7 @@ hintWorker q = catchAny go oops
       atomically (readTQueue q) >>= \case
         PutMVarOnReady m -> putMVar m ()
         PingHint -> putStrLn "Hint Worker is still alive" >> doTheQueue
+        SyncPing _t _m -> error "Sync ping is not supporte" >> doTheQueue
         KillHint -> putStrLn "Dead fish"
         -- afh <- accessFormHint <$> lift getPState
         -- putStrLn $ "Inside inter Eval [" <> codeAsStr <> "] accessFormHint = " <> toString afh
@@ -165,6 +170,7 @@ emacsModuleInit = defmodule "mymodule" $ do
     return (x + y :: Int)
   defun "hint-how-are-you" (ping q) -- $ \ (_ :: Int) -> do
   defun "eval-in-calling-thread" evalSync
+  defun "ping-hamacs-package" pingPackage
   defun "load-hamacs-package" loadHamacsPackage
   defun "eval-haskell" $ \hsCode -> do
     message "eval-haskell"
@@ -172,6 +178,20 @@ emacsModuleInit = defmodule "mymodule" $ do
     atomically . writeTQueue q $ EvalHsCode hsCode
     return (777 :: Int)
   where
+    pingPackage :: Text -> EmacsM ()
+    pingPackage pkgName = do
+      pm <- readMVar hamacsPackageQueues
+      case M.lookup pkgName pm of
+        Nothing -> throwIO . AssertionFailed $ "Hamacs package [" <> show pkgName <> "] is not found"
+        Just pkgQueue -> do
+          em <- newEmptyMVar
+          beforeCall <- liftIO (systemSeconds <$> getSystemTime)
+          atomically . writeTQueue pkgQueue $ SyncPing pkgName em
+          takeMVar em
+          afterRespond <- liftIO (systemSeconds <$> getSystemTime)
+          putTextLn $ "Duration: " <> show (afterRespond - beforeCall) <> " seconds"
+
+
     loadHamacsPackage :: Text -> EmacsM Text
     loadHamacsPackage moduleName = do
       pkgQueue <- newTQueueIO
@@ -180,8 +200,10 @@ emacsModuleInit = defmodule "mymodule" $ do
       tid <- forkIO $ runHintOn pkgQueue
 
       putStr $ "Pending module " <> show moduleName <> " from tread " <> show tid <> " while loading is complete..."
-      () <- takeMVar responseMvar
+      takeMVar responseMvar
       putStrLn $ "   " <> show moduleName <> " module loading is complete"
+
+      modifyMVar_ hamacsPackageQueues (pure . M.insert moduleName pkgQueue)
       pure $ "package [" <> moduleName <> "] is ready"
 
 

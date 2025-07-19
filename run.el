@@ -16,4 +16,6 @@
 (hint-how-are-you)
 (message (number-to-string (myplus 11111 22222)))
 (load-hamacs-package "HelloBoom")
+(ping-hamacs-package "HelloBoom")
+(ping-hamacs-package "HelloBoom")
 ;;; run.el ends here

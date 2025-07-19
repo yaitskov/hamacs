@@ -69,6 +69,7 @@ library
       , relude
       , stm
       , text
+      , time
       , unliftio
       , unliftio-core
       , yaml < 1

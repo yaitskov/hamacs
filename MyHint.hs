@@ -1,25 +1,24 @@
-module Emacs.Hint where
-
+module MyHint where
 
 import Emacs.Prelude
 import Emacs.Type
+import Emacs.Hint
 import UnliftIO.Concurrent ( ThreadId )
 import UnliftIO.STM ( TQueue, readTQueue, atomically)
 
-data HintReq
-  = EvalHsCode Text
-  | PingHint
-  | SyncPing Text (MVar ())
-  | PutMVarOnReady (MVar ())
-  | KillHint deriving ( Eq)
+-- data HintReq
+--   = EvalHsCode Text
+--   | PingHint
+--   | PutMVarOnReady (MVar ())
+--   | KillHint deriving ( Eq)
 
-data Hint
-  = Hint
-    { hintQueue :: TQueue HintReq
-    , hintThreadId :: ThreadId
-    }
+-- data Hint
+--   = Hint
+--     { hintQueue :: TQueue HintReq
+--     , hintThreadId :: ThreadId
+--     }
 
-newtype GhcDbPath = GhcDbPath { unGhcDbPath :: FilePath }  deriving (Show, Eq)
+-- newtype GhcDbPath = GhcDbPath { unGhcDbPath :: FilePath }  deriving (Show, Eq)
 
 
 runHintQueue :: StateT (TQueue HintReq) EmacsM ()
@@ -29,12 +28,7 @@ runHintQueue = do
     PutMVarOnReady m -> do
       putStrLn "Before put () to hint MVAR"
       putMVar m ()
-      runHintQueue
     PingHint -> putStrLn "Hint Worker is still alive" >> runHintQueue
-    SyncPing msg m -> do
-      putStrLn $ "Sync Ping [" <> show msg <> "]"
-      putMVar m ()
-      runHintQueue
     KillHint -> putStrLn "Dead fish"
     -- afh <- accessFormHint <$> lift getPState
     -- putStrLn $ "Inside inter Eval [" <> codeAsStr <> "] accessFormHint = " <> toString afh
