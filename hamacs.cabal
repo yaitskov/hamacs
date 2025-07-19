@@ -50,6 +50,7 @@ library
         Emacs.NAdvice
         Emacs.Package
         Emacs.Prelude
+        Emacs.Pretty
         Emacs.Symbol
         Emacs.Type
         Emacs.Validation
@@ -72,6 +73,7 @@ library
       , time
       , unliftio
       , unliftio-core
+      , wl-pprint-text < 2
       , yaml < 1
     c-sources:
         cbits/stab.c

@@ -17,10 +17,10 @@ setCommand fname _form f = do
 
 defcommand'
   :: Text
-  -> Doc
+  -> EmDoc
   -> InteractiveForm
   -> Arity
   -> ([EmacsValue] -> EmacsM EmacsValue)
   -> EmacsM ()
-defcommand' fname (Doc doc) form (Arity comArity) f =
-  setCommand fname form =<< mkFunction f comArity comArity doc
+defcommand' fname (EmDoc doc') form (Arity comArity) f =
+  setCommand fname form =<< mkFunction f comArity comArity doc'

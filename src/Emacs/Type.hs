@@ -99,5 +99,5 @@ type EFunctionStub
 
 data InteractiveForm = InteractiveNoArgs
 
-newtype Doc   = Doc Text
+newtype EmDoc = EmDoc Text
 newtype Arity = Arity Int

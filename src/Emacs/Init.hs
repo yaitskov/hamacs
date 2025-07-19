@@ -16,6 +16,7 @@ import Data.Time.Clock.System
 
 import Foreign.C.Types
 import Language.Haskell.Interpreter qualified as HI
+import Language.Haskell.Interpreter (ModuleName, MonadInterpreter, ModuleElem (Fun), Id)
 import Language.Haskell.Interpreter.Unsafe qualified as HI
 import UnliftIO.Environment
 import System.FilePath
@@ -35,11 +36,18 @@ packageDatabase =
   <&> fmap (GhcDbPath . (</> "package.conf.d")) . maybeToList
   >>= filterM (doesDirectoryExist . unGhcDbPath)
 
+modElemToFun :: ModuleElem -> Maybe Id
+modElemToFun = \case Fun x -> Just x ; _ -> Nothing
+
+modFunctions :: MonadInterpreter m => ModuleName -> m [Id]
+modFunctions mm = mapMaybe modElemToFun <$> HI.getModuleExports mm
+
 runHintOn :: TQueue HintReq -> EmacsM ()
 runHintOn q = catchAny go oops
   where
     oops (SomeException se) = putStrLn $ "\nTotal OOPS " <> show se  <> "\n"
     go = do
+      let exportingModule = "HaPack"
       putStrLn "Package thread is alive"
       HI.unsafeRunInterpreterWithArgs
         [ "-no-user-package-db" -- , "-v"
@@ -59,11 +67,17 @@ runHintOn q = catchAny go oops
         , "-package", "unliftio"
         , "-package", "unliftio-core"
         , "-XGHC2024" -- LambdaCase
+        , "-iscript/hapack"
         ] (do
           HI.set [ HI.languageExtensions HI.:= [HI.NoImplicitPrelude] ]
-          -- HI.loadModules [  "MyHint" ]  -- "MyModule" ]
+          HI.loadModules [ exportingModule ]
           HI.setImports [ "UnliftIO.STM", "Emacs.Type", "Emacs.Hint", "Relude" ]
           putStrLn $ "before unsafeInterpret"
+          -- list
+          fnNames <- modFunctions exportingModule
+          printDoc $ hsep ["Functions of",  doc exportingModule, ":"
+                            <> linebreak <> tab (vsep fnNames) <> linebreak
+                          ]
           r :: StateT (TQueue HintReq) EmacsM () <- HI.unsafeInterpret "runHintQueue" "StateT (TQueue HintReq) EmacsM ()"
           lift (evalStateT r q)
 
