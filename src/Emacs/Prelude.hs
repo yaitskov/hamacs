@@ -1,4 +1,13 @@
-module Emacs.Prelude (module X) where
+module Emacs.Prelude
+  ( module X
+  , NEL
+  ) where
 
 
-import Relude as X hiding (atomically, lookupEnv)
+import Control.Lens as X ((^.), (%~), _Left, _Right)
+import Data.Functor.Identity as X
+import Refined as X
+import Relude as X hiding (NonEmpty, Predicate, atomically, lookupEnv)
+import Relude qualified as R
+
+type NEL = R.NonEmpty

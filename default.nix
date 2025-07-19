@@ -44,6 +44,7 @@ let
       ghcid
       hlint
       niv
+      emacs
     ]) ++ [ hls ];
     shellHook = ''
       export PS1='$ '

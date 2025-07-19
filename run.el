@@ -15,4 +15,5 @@
 (eval-haskell "putStrLn \"Third message in the Queue\"")
 (hint-how-are-you)
 (message (number-to-string (myplus 11111 22222)))
+(load-hamacs-package "HelloBoom")
 ;;; run.el ends here

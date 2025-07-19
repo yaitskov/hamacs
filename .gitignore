@@ -3,5 +3,6 @@
 /dist-newstyle
 *#
 *.so
+/design
 log.org
 /result*

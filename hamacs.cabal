@@ -38,30 +38,40 @@ library
         NoImplicitPrelude
         RankNTypes
         ScopedTypeVariables
+        TypeFamilies
     exposed-modules:
         Emacs
-        Emacs.Type
-        Emacs.Init
-        Emacs.Prelude
-        Emacs.Internal
-        Emacs.Symbol
+        Emacs.Command
         Emacs.Core
         Emacs.Function
-        Emacs.Command
+        Emacs.Hint
+        Emacs.Init
+        Emacs.Internal
         Emacs.NAdvice
+        Emacs.Package
+        Emacs.Prelude
+        Emacs.Symbol
+        Emacs.Type
+        Emacs.Validation
     build-depends:
+      , aeson < 3
       , base >=4.7 && <5
       , cases
-      , containers
+      , containers < 1
+      , directory < 2
       , exceptions
-      , filepath
+      , filepath < 2
+      , generic-lens < 3
       , hint
+      , lens < 6
       , mtl
+      , refined < 1
       , relude
       , stm
       , text
       , unliftio
       , unliftio-core
+      , yaml < 1
     c-sources:
         cbits/stab.c
     default-language: GHC2024
