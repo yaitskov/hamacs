@@ -19,6 +19,7 @@ module Emacs.Internal (
     isNil,
     -- mk
     mkFunction,
+    -- mkHintFunction,
     mkInteger,
     mkString,
     intern,
@@ -27,7 +28,8 @@ module Emacs.Internal (
     mkT,
     --
     funcall,
-    errorHandle
+    errorHandle,
+    checkExitStatus
     ) where
 
 -- import Prelude (error)
@@ -35,7 +37,9 @@ module Emacs.Internal (
 import Data.Text.Foreign qualified as TF
 import Relude -- hiding (mkInteger, typeOf)
 import Control.Exception (catch, throwIO)
+-- import Control.Concurrent.STM.TQueue -- ( writeTQueue )
 -- import Data.IORef
+-- import Emacs.Hint
 import Emacs.Type
 import qualified Data.List as List
 import qualified Data.Map as Map
@@ -48,6 +52,7 @@ import Foreign.Marshal.Alloc
 import GHC.Ptr
 -- import qualified GHC.Foreign as GHC
 -- import GHC.IO.Encoding.UTF8 (utf8)
+-- import System.IO.Unsafe ( unsafePerformIO )
 
 initState :: MonadIO m => m PState
 initState = do
@@ -60,13 +65,13 @@ initCtx env = do
   pstatep <- liftIO $ newStablePtr pstate
   return $ Ctx pstatep pstate env
 
-getPStateStablePtr :: EmacsM (StablePtr PState)
+getPStateStablePtr :: (MonadIO m, HasEmacsCtx m) => m (StablePtr PState)
 getPStateStablePtr =
-  pstateStablePtr <$> ask
+  pstateStablePtr <$> getEmacsCtx
 
-getEnv :: EmacsM EmacsEnv
+getEnv :: (Monad m, HasEmacsCtx m) => m EmacsEnv
 getEnv =
-  emacsEnv <$> ask
+  emacsEnv <$> getEmacsCtx
 
 -- Logging here is not a good idea. When passing high order function,
 -- which could be invoked manytimes, its get quite slow.
@@ -87,10 +92,10 @@ foreign import ccall _type_of
   -> EmacsValue
   -> IO EmacsValue
 
-typeOf :: EmacsValue -> EmacsM EmacsType
+typeOf :: (MonadIO m, HasEmacsCtx m) => EmacsValue -> m EmacsType
 typeOf ev = do
   env <- getEnv
-  typeP <- checkExitStatus $ _type_of env ev
+  typeP <- checkExitStatus $ liftIO (_type_of env ev)
   types <- forM emacsTypes $ \t -> do
              q <- intern (emacsTypeSymbolName t)
              b <- eq q typeP
@@ -110,10 +115,10 @@ foreign import ccall _extract_integer
   -> EmacsValue
   -> IO CIntMax
 
-extractInteger :: Num b => EmacsValue -> EmacsM b
+extractInteger :: (MonadIO m, HasEmacsCtx m, Num b) => EmacsValue -> m b
 extractInteger ev = do
   env <- getEnv
-  i <- checkExitStatus $ _extract_integer env ev
+  i <- checkExitStatus $ liftIO (_extract_integer env ev)
   return (fromIntegral i)
 
 -- emacs-module.c 参照
@@ -137,10 +142,10 @@ foreign import ccall _copy_string_contents
 
 -- toS = id -- toString
 
-extractString :: EmacsValue -> EmacsM Text
+extractString :: (MonadIO m, HasEmacsCtx m) => EmacsValue -> m Text
 extractString ev = do
   env <- getEnv
-  checkExitStatus $ alloca $ \length' -> do
+  checkExitStatus $ liftIO $ alloca $ \length' -> do
     result <- _copy_string_contents env ev nullPtr length'
     if result == 1
       then do
@@ -161,7 +166,7 @@ foreign import ccall _eq
   -> EmacsValue
   -> IO CInt
 
-eq :: EmacsValue -> EmacsValue -> EmacsM Bool
+eq :: (MonadIO m, HasEmacsCtx m) => EmacsValue -> EmacsValue -> m Bool
 eq ev0 ev1 = do
   env <- getEnv
   r <- liftIO $ _eq env ev0 ev1
@@ -196,15 +201,16 @@ foreign import ccall "wrapper" wrapEFunctionStub
   :: EFunctionStub
   -> IO (FunPtr EFunctionStub)
 
-mkFunction :: ([EmacsValue] -> EmacsM EmacsValue) -> Int -> Int -> Text -> EmacsM EmacsValue
+mkFunction :: (MonadIO m, HasEmacsCtx m) =>
+  ([EmacsValue] -> EmacsM EmacsValue) -> Int -> Int -> Text -> m EmacsValue
 mkFunction f minArity' maxArity' doc' = do
   let minArity = fromIntegral minArity' :: CPtrdiff
       maxArity = fromIntegral maxArity' :: CPtrdiff
   datap <- getPStateStablePtr
   stubp <- liftIO (wrapEFunctionStub stub)
   env <- getEnv
-  checkExitStatus . TF.withCString doc' $ \doc ->
-    _make_function env minArity maxArity stubp doc datap
+  checkExitStatus $ liftIO (TF.withCString doc' $ \doc ->
+    _make_function env minArity maxArity stubp doc datap)
   where
     stub :: EFunctionStub
     stub env nargs args pstatep = errorHandle env $ do
@@ -239,9 +245,9 @@ errorHandle env action =
       setter env a0 a1
       return a0
 
-checkExitStatus :: IO a -> EmacsM a
+checkExitStatus :: (MonadIO m, HasEmacsCtx m) => m a -> m a
 checkExitStatus action = do
-  v <- liftIO action
+  v <- action
   funcallExit <- nonLocalExitCheck
   when (funcallExit /= EmacsFuncallExitReturn) $ do
     (_,a0,a1) <- nonLocalExitGet
@@ -249,17 +255,30 @@ checkExitStatus action = do
     liftIO . throwIO $ EmacsException funcallExit a0 a1
   return v
 
+-- checkHintExitStatus :: IO a -> EmacsHintM a
+-- checkHintExitStatus action = do
+--   v <- liftIO action
+--   funcallExit <- nonLocalExitCheck
+--   when (funcallExit /= EmacsFuncallExitReturn) $ do
+--     (_,a0,a1) <- nonLocalExitGet
+--     nonLocalExitClear
+--     liftIO . throwIO $ EmacsException funcallExit a0 a1
+--   return v
+
+
+
+
 --   emacs_value (*make_integer) (emacs_env *env, intmax_t value);
 foreign import ccall _make_integer
   :: EmacsEnv
   -> CIntMax
   -> IO EmacsValue
 
-mkInteger :: Integral n => n -> EmacsM EmacsValue
+mkInteger :: (MonadIO m, HasEmacsCtx m, Integral n) => n -> m EmacsValue
 mkInteger i' = do
   let i = fromIntegral i' :: CIntMax
   env <- getEnv
-  checkExitStatus $ _make_integer env i
+  checkExitStatus (liftIO $  _make_integer env i)
 
 -- Create emacs symbol
 foreign import ccall _make_string
@@ -268,11 +287,11 @@ foreign import ccall _make_string
   -> CPtrdiff
   -> IO EmacsValue
 
-mkString :: Text -> EmacsM EmacsValue
+mkString :: (MonadIO m, HasEmacsCtx m) => Text -> m EmacsValue
 mkString str = do
   env <- getEnv
-  checkExitStatus . TF.withCStringLen str $ \(cstr,len) ->
-    _make_string env cstr (fromIntegral len)
+  checkExitStatus $ liftIO (TF.withCStringLen str $ \(cstr,len) ->
+                               _make_string env cstr (fromIntegral len))
 
 -- Symbol
 -- https://www.gnu.org/software/emacs/manual/html_node/elisp/Creating-Symbols.html
@@ -281,7 +300,7 @@ foreign import ccall _intern
   -> CString
   -> IO EmacsValue
 
-intern :: Text -> EmacsM EmacsValue
+intern :: (MonadIO m, HasEmacsCtx m) => Text -> m EmacsValue
 intern str = do
   s' <- lookupCache
   case s' of
@@ -303,21 +322,21 @@ intern str = do
 
     create = do
       env <- getEnv
-      checkExitStatus . TF.withCString str $ \cstr -> _intern env cstr
+      checkExitStatus (liftIO (TF.withCString str $ \cstr -> _intern env cstr))
 
-mkNil :: EmacsM EmacsValue
+mkNil :: (MonadIO m, HasEmacsCtx m) => m EmacsValue
 mkNil = do
   q0 <- intern "symbol-value"
   q1 <- intern "nil"
   funcall q0 [q1]
 
-mkT :: EmacsM EmacsValue
+mkT :: (MonadIO m, HasEmacsCtx m) => m EmacsValue
 mkT = do
   q0 <- intern "symbol-value"
   q1 <- intern "t"
   funcall q0 [q1]
 
-mkList :: [EmacsValue] -> EmacsM EmacsValue
+mkList :: (MonadIO m, HasEmacsCtx m) => [EmacsValue] -> m EmacsValue
 mkList evs = do
   listQ <- intern "list"
   funcall listQ evs
@@ -327,16 +346,16 @@ foreign import ccall _make_global_ref
   -> EmacsValue
   -> IO GlobalEmacsValue
 
-mkGlobalRef :: EmacsValue -> EmacsM GlobalEmacsValue
+mkGlobalRef :: (MonadIO m, HasEmacsCtx m) => EmacsValue -> m GlobalEmacsValue
 mkGlobalRef ev = do
   env <- getEnv
-  checkExitStatus $ _make_global_ref env ev
+  checkExitStatus $ liftIO (_make_global_ref env ev)
 
 foreign import ccall _non_local_exit_check
  :: EmacsEnv
  -> IO CInt
 
-nonLocalExitCheck :: EmacsM EmacsFuncallExit
+nonLocalExitCheck :: (MonadIO m, HasEmacsCtx m) => m EmacsFuncallExit
 nonLocalExitCheck = do
   env <- getEnv
   toEnum . fromIntegral <$> liftIO (_non_local_exit_check env)
@@ -367,7 +386,7 @@ foreign import ccall _non_local_exit_clear
   :: EmacsEnv
   -> IO ()
 
-nonLocalExitClear :: EmacsM ()
+nonLocalExitClear :: (MonadIO m, HasEmacsCtx m) => m ()
 nonLocalExitClear = do
   env <- getEnv
   liftIO $ _non_local_exit_clear env
@@ -378,7 +397,7 @@ foreign import ccall _non_local_exit_get
   -> Ptr EmacsValue
   -> IO CInt
 
-nonLocalExitGet :: EmacsM (EmacsFuncallExit,EmacsValue,EmacsValue)
+nonLocalExitGet :: (MonadIO m, HasEmacsCtx m) => m (EmacsFuncallExit,EmacsValue,EmacsValue)
 nonLocalExitGet = do
   env <- getEnv
   liftIO $ do
@@ -398,10 +417,9 @@ foreign import ccall _funcall
   -> Ptr EmacsValue
   -> IO EmacsValue
 
-funcall :: EmacsValue -> [EmacsValue] -> EmacsM EmacsValue
+funcall :: (MonadIO m, HasEmacsCtx m) => EmacsValue -> [EmacsValue] -> m EmacsValue
 funcall func args = do
   env <- getEnv
-  checkExitStatus . withArray args $ \carr ->
-    _funcall env func argsLen carr
+  checkExitStatus $ liftIO (withArray args $ \carr -> _funcall env func argsLen carr)
   where
     argsLen = fromIntegral (length args) :: CPtrdiff

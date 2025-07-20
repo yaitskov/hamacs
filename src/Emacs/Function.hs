@@ -5,7 +5,7 @@ module Emacs.Function where
 import Relude
 import Emacs.Core
 
-setFunction :: Text -> EmacsValue -> EmacsM ()
+setFunction :: (MonadIO m, HasEmacsCtx m) => Text -> EmacsValue -> m ()
 setFunction name f = do
   void $ funcall2 "fset" (Symbol name) f
 

@@ -20,14 +20,20 @@ data Ctx = Ctx
   , emacsEnv :: EmacsEnv
   }
 
+class HasEmacsCtx m where
+  getEmacsCtx :: m Ctx
+
 returnHello :: Text
 returnHello = "Hello"
 
 type EmacsM =
   ReaderT Ctx IO
 
-getPState :: EmacsM PState
-getPState = asks pstate
+instance HasEmacsCtx EmacsM where
+  getEmacsCtx = ask
+
+getPState :: (MonadIO m, HasEmacsCtx m) => m PState
+getPState = pstate <$> getEmacsCtx
 
 data EmacsType = ESymbol
                | EInteger

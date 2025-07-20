@@ -52,6 +52,7 @@ library
         Emacs.Prelude
         Emacs.Pretty
         Emacs.Symbol
+        Emacs.Text
         Emacs.Type
         Emacs.Validation
     build-depends:

@@ -38,7 +38,7 @@ defmodule name mod' ert = do
   return 0
 
 class ToEmacsValue h where
-  toEv :: h -> EmacsM EmacsValue
+  toEv :: (MonadIO m, HasEmacsCtx m) => h -> m EmacsValue
 
 instance ToEmacsValue EmacsValue where
   toEv = pure
@@ -102,7 +102,7 @@ instance AsEmacsValue EmacsFunction where asEmacsValue (EmacsFunction ev) = ev
 
 -- Symbol
 class ToEmacsValue s => ToEmacsSymbol s where
-  toEmacsSymbol :: s -> EmacsM EmacsSymbol
+  toEmacsSymbol :: (MonadIO m, HasEmacsCtx m) => s -> m EmacsSymbol
 instance ToEmacsSymbol EmacsSymbol where
   toEmacsSymbol = pure
 instance ToEmacsSymbol Symbol      where
@@ -110,7 +110,7 @@ instance ToEmacsSymbol Symbol      where
 
 -- Keyword
 class ToEmacsValue s => ToEmacsKeyword s where
-  toEmacsKeyword :: s -> EmacsM EmacsKeyword
+  toEmacsKeyword :: (MonadIO m, HasEmacsCtx m) => s -> m EmacsKeyword
 instance ToEmacsKeyword EmacsKeyword where
   toEmacsKeyword = pure
 instance ToEmacsKeyword Keyword where
@@ -118,7 +118,7 @@ instance ToEmacsKeyword Keyword where
 
 -- Cons
 class ToEmacsValue s => ToEmacsCons s where
-  toEmacsCons :: s -> EmacsM EmacsCons
+  toEmacsCons :: (MonadIO m, HasEmacsCtx m) => s -> m EmacsCons
 instance ToEmacsCons EmacsCons where
   toEmacsCons = pure
 instance (ToEmacsValue a, ToEmacsValue b) => ToEmacsCons (a, b) where
@@ -129,14 +129,14 @@ instance (ToEmacsValue a, ToEmacsValue b) => ToEmacsCons (a, b) where
 
 -- List
 class ToEmacsValue s => ToEmacsList s where
-  toEmacsList :: s -> EmacsM EmacsList
+  toEmacsList :: (MonadIO m, HasEmacsCtx m) => s -> m EmacsList
 instance ToEmacsList EmacsList where
   toEmacsList = pure
 instance ToEmacsValue x => ToEmacsList [x] where
   toEmacsList xs = EmacsList <$> (mkList =<< mapM toEv xs)
 
 class (Callable s,ToEmacsValue s) => ToEmacsFunction s where
-  toEmacsFunction :: s -> EmacsM EmacsFunction
+  toEmacsFunction :: (MonadIO m, HasEmacsCtx m) => s -> m EmacsFunction
 
 instance ToEmacsFunction EmacsFunction where
   toEmacsFunction = pure
@@ -146,20 +146,20 @@ instance (FromEmacsValue a, Callable b) => ToEmacsFunction (a -> b) where
 
 -- Function call Utilities
 funcall1
-  :: ToEmacsValue a
+  :: (MonadIO m, HasEmacsCtx m, ToEmacsValue a)
   => Text
   -> a
-  -> EmacsM EmacsValue
+  -> m EmacsValue
 funcall1 fname ev0 =
   join $ funcall <$> intern fname
                  <*> sequence [toEv ev0]
 
 funcall2
-  :: (ToEmacsValue a, ToEmacsValue b)
+  :: (MonadIO m, HasEmacsCtx m, ToEmacsValue a, ToEmacsValue b)
   => Text
   -> a
   -> b
-  -> EmacsM EmacsValue
+  -> m EmacsValue
 funcall2 fname ev0 ev1 =
   join $ funcall <$> intern fname
                  <*> sequence [toEv ev0, toEv ev1]
@@ -222,7 +222,7 @@ instance {-# OVERLAPPING #-} (FromEmacsValue a, Callable b) => Callable (a -> b)
   arity f = arity (f (error "Callable (a -> b)")) + 1
 
 
-mkFunctionFromCallable :: Callable f => f -> EmacsM EmacsValue
+mkFunctionFromCallable :: (MonadIO m, HasEmacsCtx m) => Callable f => f -> m EmacsValue
 mkFunctionFromCallable f = do
   let a = arity f
   mkFunction func a a ""
@@ -251,15 +251,15 @@ print ev =
   void $ funcall1 "print" ev
 
 mkCons
-  :: (ToEmacsValue a, ToEmacsValue b)
+  :: (MonadIO m, HasEmacsCtx m, ToEmacsValue a, ToEmacsValue b)
   => a
   -> b
-  -> EmacsM EmacsCons
+  -> m EmacsCons
 mkCons a b =
   EmacsCons <$> funcall2 "cons" a b
 
-car :: EmacsValue -> EmacsM EmacsValue
+car :: (MonadIO m, HasEmacsCtx m) => EmacsValue -> m EmacsValue
 car = funcall1 "car"
 
-cdr :: EmacsValue -> EmacsM EmacsValue
+cdr :: (MonadIO m, HasEmacsCtx m) => EmacsValue -> m EmacsValue
 cdr = funcall1 "cdr"

@@ -2,20 +2,13 @@
 ;;; Commentary:
 ;;; Code:
 (message "Before mymodule is required")
-(require 'mymodule)
+(require 'hamacs)
 (message "After mymodule is required")
-(eval-in-calling-thread "sayHello")
-(eval-in-calling-thread "sayHello")
-(hint-how-are-you)
-(message (number-to-string (myplus 10 1000)))
-(hint-how-are-you)
-(message (number-to-string (myplus 10 7)))
-(eval-haskell "putStrLn \"Hello Наконец Работает !!!! World\"")
-(eval-haskell "putStrLn \"Second message in the Queue\"")
-(eval-haskell "putStrLn \"Third message in the Queue\"")
-(hint-how-are-you)
-(message (number-to-string (myplus 11111 22222)))
-(load-hamacs-package "HelloBoom")
-(ping-hamacs-package "HelloBoom")
-(ping-hamacs-package "HelloBoom")
+(hamacs-load-package "hapack")
+(hamacs-ping-package "hapack")
+(hamacs-ping-package "hapack")
+(hapack-sayHello)
+(hapack-iAmEmacsCompatibleFun "wow")
+; (message "Result: %d" (hapack-third_function 11 1000))
+
 ;;; run.el ends here

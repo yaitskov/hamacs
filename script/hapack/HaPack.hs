@@ -11,8 +11,8 @@ fooBar = 33
 sayHello :: EmacsM ()
 sayHello = putStrLn "Hello from HINT"
 
-third_function :: Int -> Int -> IO ()
-third_function a b = print $ a + b
+third_function :: Int -> Int -> Int
+third_function a b = a + b
 
 iAmEmacsCompatibleFun :: Text -> EmacsM ()
 iAmEmacsCompatibleFun txt = message txt
