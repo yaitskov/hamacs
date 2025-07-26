@@ -5,8 +5,11 @@ import Emacs.Core (mkFunctionFromCallable, message)
 import Emacs.Type
 import Relude
 
-fooBar :: Int
-fooBar = 33
+fooBar :: Int -> Int
+fooBar n = n + 33
+
+fooBar0 :: Int
+fooBar0 = 3333
 
 sayHello :: EmacsM ()
 sayHello = putStrLn "Hello from HINT"

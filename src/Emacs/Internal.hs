@@ -2,7 +2,10 @@
 module Emacs.Internal (
     module Emacs.Type,
     nonLocalExitThrow,
-    initState,
+    -- _make_integer,
+    -- _extract_integer,
+    -- initState,
+    mkGlobalRef,
     initCtx,
     getEnv,
     runEmacsM,
@@ -32,6 +35,7 @@ module Emacs.Internal (
     checkExitStatus
     ) where
 
+import Unsafe.Coerce ( unsafeCoerce )
 -- import Prelude (error)
 -- import Protolude hiding (mkInteger, typeOf)
 import Data.Text.Foreign qualified as TF
@@ -42,7 +46,7 @@ import Control.Exception (catch, throwIO)
 -- import Emacs.Hint
 import Emacs.Type
 import qualified Data.List as List
-import qualified Data.Map as Map
+-- import qualified Data.Map as Map
 import Foreign.C.Types
 import Foreign.C.String
 import Foreign.StablePtr
@@ -54,24 +58,23 @@ import GHC.Ptr
 -- import GHC.IO.Encoding.UTF8 (utf8)
 -- import System.IO.Unsafe ( unsafePerformIO )
 
-initState :: MonadIO m => m PState
-initState = do
-  mapRef <- liftIO $ newIORef mempty
-  return $ PState mapRef "Value of AccessFromHint field"
+-- initState :: MonadIO m => m PState
+-- initState = do
+--   mapRef <- liftIO $ newIORef mempty
+--   return $ PState mapRef "Value of AccessFromHint field"
 
 initCtx :: MonadIO m => EmacsEnv -> m Ctx
-initCtx env = do
-  pstate <- initState
-  pstatep <- liftIO $ newStablePtr pstate
-  return $ Ctx pstatep pstate env
+initCtx env = pure env
+  -- pstate <- initState
+  -- pstatep <- liftIO $ newStablePtr pstate
+  -- return $ Ctx pstatep pstate env
 
-getPStateStablePtr :: (MonadIO m, HasEmacsCtx m) => m (StablePtr PState)
-getPStateStablePtr =
-  pstateStablePtr <$> getEmacsCtx
+-- getPStateStablePtr :: (MonadIO m, HasEmacsCtx m) => m (StablePtr PState)
+-- getPStateStablePtr =
+--   pstateStablePtr <$> getEmacsCtx
 
 getEnv :: (Monad m, HasEmacsCtx m) => m EmacsEnv
-getEnv =
-  emacsEnv <$> getEmacsCtx
+getEnv = getEmacsCtx
 
 -- Logging here is not a good idea. When passing high order function,
 -- which could be invoked manytimes, its get quite slow.
@@ -201,22 +204,31 @@ foreign import ccall "wrapper" wrapEFunctionStub
   :: EFunctionStub
   -> IO (FunPtr EFunctionStub)
 
+stableNullPtr :: StablePtr Void
+stableNullPtr = unsafeCoerce nullPtr
+-- unsafePerformIO $ do
+--   np <- newStablePtr 0
+--   pure $ coerce np
+
 mkFunction :: (MonadIO m, HasEmacsCtx m) =>
   ([EmacsValue] -> EmacsM EmacsValue) -> Int -> Int -> Text -> m EmacsValue
 mkFunction f minArity' maxArity' doc' = do
   let minArity = fromIntegral minArity' :: CPtrdiff
       maxArity = fromIntegral maxArity' :: CPtrdiff
-  datap <- getPStateStablePtr
+  -- datap <- getPStateStablePtr
+  -- rt <- rtPtr <$> getEmacsCtx -- :: m Ctx
   stubp <- liftIO (wrapEFunctionStub stub)
   env <- getEnv
   checkExitStatus $ liftIO (TF.withCString doc' $ \doc ->
-    _make_function env minArity maxArity stubp doc datap)
+    _make_function env minArity maxArity stubp doc stableNullPtr)
   where
     stub :: EFunctionStub
-    stub env nargs args pstatep = errorHandle env $ do
-      pstate <- deRefStablePtr pstatep
-      es <- fmap EmacsValue <$> peekArray (fromIntegral nargs) args
-      runEmacsM (Ctx pstatep pstate env) (f es)
+    stub env nargs args _pstatep = do
+      -- _env <- getEmacsEnvFromRT rt
+      errorHandle env $ do
+        -- pstate <- deRefStablePtr pstatep
+        es <- fmap EmacsValue <$> peekArray (fromIntegral nargs) args
+        runEmacsM env (f es)
 
 errorHandle :: EmacsEnv -> IO EmacsValue -> IO EmacsValue
 errorHandle env action =
@@ -274,11 +286,11 @@ foreign import ccall _make_integer
   -> CIntMax
   -> IO EmacsValue
 
-mkInteger :: (MonadIO m, HasEmacsCtx m, Integral n) => n -> m EmacsValue
+mkInteger :: (Show n, MonadIO m, HasEmacsCtx m, Integral n) => n -> m EmacsValue
 mkInteger i' = do
   let i = fromIntegral i' :: CIntMax
   env <- getEnv
-  checkExitStatus (liftIO $  _make_integer env i)
+  checkExitStatus (liftIO $ _make_integer env i)
 
 -- Create emacs symbol
 foreign import ccall _make_string
@@ -301,24 +313,24 @@ foreign import ccall _intern
   -> IO EmacsValue
 
 intern :: (MonadIO m, HasEmacsCtx m) => Text -> m EmacsValue
-intern str = do
-  s' <- lookupCache
-  case s' of
-    Just gev ->
-      return (castGlobalToEmacsValue gev)
-    Nothing ->
-      storeToCache =<< create
+intern str = create
+  -- s' <- lookupCache
+  -- case s' of
+  --   Just gev ->
+  --     return (castGlobalToEmacsValue gev)
+  --   Nothing ->
+  --     storeToCache =<< create
   where
-    lookupCache = do
-      mapRef <- symbolMap <$> getPState
-      Map.lookup str <$> (liftIO $ readIORef mapRef)
+  --   lookupCache = do
+  --     mapRef <- symbolMap <$> getPState
+  --     Map.lookup str <$> (liftIO $ readIORef mapRef)
 
 
-    storeToCache ev = do
-      mapRef <- symbolMap <$> getPState
-      gev <- mkGlobalRef ev
-      liftIO $ modifyIORef mapRef (Map.insert str gev)
-      return (castGlobalToEmacsValue gev)
+  --   storeToCache ev = do
+  --     mapRef <- symbolMap <$> getPState
+  --     gev <- mkGlobalRef ev
+  --     liftIO $ modifyIORef mapRef (Map.insert str gev)
+  --     return (castGlobalToEmacsValue gev)
 
     create = do
       env <- getEnv

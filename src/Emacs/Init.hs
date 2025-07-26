@@ -103,8 +103,8 @@ runHintOn packName q = catchAny go oops
             (EmacsHintM r2) :: EmacsHintM () <- HI.unsafeInterpret (toString cmd)  "EmacsHintM ()"
             liftIO (runReaderT r2 $ EmacsHintConf packName q emcCtx)
 
-          (EmacsHintM r) :: EmacsHintM () <- HI.unsafeInterpret "runHintQueue" "EmacsHintM ()"
-          liftIO (runReaderT r $ EmacsHintConf packName q emcCtx)
+          r <- HI.unsafeInterpret "runHintQueue" "ReaderT HintQueueWorkerConf IO ()"
+          liftIO (runReaderT r $ HintQueueWorkerConf packName q)
         ) >>=
        \case
          Left e -> do

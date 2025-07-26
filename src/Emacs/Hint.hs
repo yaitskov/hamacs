@@ -1,16 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 module Emacs.Hint where
 
 
--- import Control.Concurrent.STM.TQueue (  )
 import Data.Text.Foreign qualified as TF
 import Emacs.Core
 import Emacs.Prelude
--- import Emacs.Type
 import Emacs.Function
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign.Ptr
+-- import Foreign.Storable
 import Foreign.StablePtr
 import System.IO.Unsafe
 import UnliftIO.Concurrent (ThreadId)
@@ -41,8 +42,8 @@ data HintReq
   | CallFun
       ([EmacsValue] -> EmacsM EmacsValue) -- (FunPtr EFunctionStub)
       [EmacsValue] --  (Ptr (Ptr ()))
-      -- CPtrdiff
       (MVar (Either SomeException EmacsValue))
+      EmacsEnv
   | KillHint
 
 data Hint
@@ -68,11 +69,17 @@ instance MonadReader EmacsHintConf EmacsHintM where
    local f (EmacsHintM m) = EmacsHintM (local f m)
 
 instance HasEmacsCtx EmacsHintM where
-  getEmacsCtx = EmacsHintM (emacsCtxM <$> ask)
+  getEmacsCtx = EmacsHintM (asks (.emacsCtxM))
 
-runHintQueue :: EmacsHintM ()
+data HintQueueWorkerConf
+  = HintQueueWorkerConf
+  { packageName :: Text
+  , packageInQueue :: TQueue HintReq
+  }
+
+runHintQueue :: ReaderT HintQueueWorkerConf IO ()
 runHintQueue = do
-  q <- asks packageInQueue
+  q <- asks (.packageInQueue)
   atomically (readTQueue q) >>= \case
     PutMVarOnReady m -> do
       putStrLn "Before put () to hint MVAR"
@@ -84,11 +91,9 @@ runHintQueue = do
       putMVar m ()
       runHintQueue
     KillHint -> putStrLn "Dead fish"
-    CallFun fn fnArgs responseVar -> do
+    CallFun fn fnArgs responseVar ee -> do
       catchAny
-        (do
-            c :: Ctx <- asks emacsCtxM
-            !r <- liftIO (runReaderT (fn fnArgs) c)
+        (do !r <- runEmacsM ee (fn fnArgs)
             putMVar responseVar $! Right r
         )
         (putMVar responseVar . Left)
@@ -115,23 +120,36 @@ mkHintFunction f minArity' maxArity' doc' = do
       maxArity = fromIntegral maxArity' :: CPtrdiff
   -- datap <- newSta getPStateStablePtr
   -- get and bind queue
-  q <- asks packageInQueue
-
-  stubp <- liftIO (wrapHintFunctionStub (stub q))
-  env <- emacsEnv . emacsCtxM <$> ask -- getEnv
-
+  q <- asks (.packageInQueue)
+  -- rt <- rtPtr <$> getEmacsCtx
+  env <- getEmacsCtx
+  stubp <- liftIO (wrapHintFunctionStub (stub env q))
   checkExitStatus $ liftIO (TF.withCString doc' $ \emFunDoc ->
     _make_function env minArity maxArity stubp emFunDoc unitStablePtr)
   where
-    stub :: TQueue HintReq -> HintFunctionStub
-    stub q env nargs args _pstatep =
+    stub :: EmacsEnv -> TQueue HintReq -> HintFunctionStub
+    stub _env q env nargs args _pstatep = do
+      -- fArg <- peek args
+      -- hi <- _extract_integer env (EmacsValue fArg)
+      -- putStrLn $ " env " <> show env <> "; nargs: " <> show nargs <> "; input = " <> show hi
+      -- p <- _make_integer env 33
+      -- putStrLn $ " p(env) " <> show p
+
+
+      -- env <- getEmacsEnvFromRT rt
       errorHandle env $ do
         es <- fmap EmacsValue <$> peekArray (fromIntegral nargs) args
         respMvar <- newEmptyMVar
-        atomically $ writeTQueue q (CallFun f es respMvar)
+        atomically $ writeTQueue q (CallFun f es respMvar env)
+        -- putStrLn $ "Before readding mvar" <> show env
         readMVar respMvar >>= \case
-          Left se -> throwIO se
-          Right r -> pure r
+          Left se -> do
+            -- putStrLn "Before throw exception"
+            throwIO se
+          Right r -> do
+            -- hr <- _extract_integer env r
+            -- putStrLn $ "Before return to Emacs " <> show r <> " ; hr = " <> show hr
+            pure r
 
 mkHintFunctionFromCallable :: Callable f => f -> EmacsHintM EmacsValue
 mkHintFunctionFromCallable f = do

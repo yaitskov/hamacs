@@ -9,16 +9,19 @@ import Foreign.StablePtr ( StablePtr )
 import Foreign.Storable ( Storable )
 import Data.Data ( Data(dataTypeOf), dataTypeConstrs, fromConstr )
 
-data PState = PState
-  { symbolMap :: IORef (Map Text GlobalEmacsValue)
-  , accessFormHint :: Text
-  }
+-- data PState = PState
+--   { symbolMap :: IORef (Map Text GlobalEmacsValue)
+--   , accessFormHint :: Text
+--   }
 
-data Ctx = Ctx
-  { pstateStablePtr :: StablePtr PState
-  , pstate :: PState
-  , emacsEnv :: EmacsEnv
-  }
+type Ctx = EmacsEnv
+
+-- data Ctx = Ctx
+--   { pstateStablePtr :: StablePtr PState
+--   , pstate :: PState
+--   , emacsEnv :: EmacsEnv
+--   -- , rtPtr :: Ptr ()
+--   }
 
 class HasEmacsCtx m where
   getEmacsCtx :: m Ctx
@@ -32,8 +35,8 @@ type EmacsM =
 instance HasEmacsCtx EmacsM where
   getEmacsCtx = ask
 
-getPState :: (MonadIO m, HasEmacsCtx m) => m PState
-getPState = pstate <$> getEmacsCtx
+-- getPState :: (MonadIO m, HasEmacsCtx m) => m PState
+-- getPState = pstate <$> getEmacsCtx
 
 data EmacsType = ESymbol
                | EInteger
@@ -59,10 +62,10 @@ emacsTypes = fromConstr <$> dataTypeConstrs (dataTypeOf ESymbol)
 type EmacsModule = Ptr () -> IO CInt
 
 newtype EmacsEnv   = EmacsEnv (Ptr ())
-  deriving (Storable)
+  deriving (Storable, Show)
 
 newtype EmacsValue = EmacsValue (Ptr ())
-  deriving (Storable)
+  deriving (Storable, Show)
 
 newtype GlobalEmacsValue = GlobalEmacsValue (Ptr ())
   deriving (Storable)
@@ -100,7 +103,7 @@ type EFunctionStub
   = EmacsEnv
   -> CPtrdiff
   -> Ptr (Ptr ())
-  -> StablePtr PState
+  -> StablePtr Void
   -> IO EmacsValue
 
 data InteractiveForm = InteractiveNoArgs

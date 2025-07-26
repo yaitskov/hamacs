@@ -9,6 +9,7 @@
 (hamacs-ping-package "hapack")
 (hapack-sayHello)
 (hapack-iAmEmacsCompatibleFun "wow")
-; (message "Result: %d" (hapack-third_function 11 1000))
+(message "Result: %d" (hapack-fooBar 22))
+(message "Result: %d" (hapack-third_function 11 1000))
 
 ;;; run.el ends here
