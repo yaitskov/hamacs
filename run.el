@@ -11,5 +11,5 @@
 (hapack-iAmEmacsCompatibleFun "wow")
 (message "Result: %d" (hapack-fooBar 22))
 (message "Result: %d" (hapack-third_function 11 1000))
-
+(hapack-sayHelloInEmacs "This message is emitted via Emacs message function")
 ;;; run.el ends here

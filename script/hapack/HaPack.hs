@@ -1,7 +1,7 @@
 module HaPack where
 
 
-import Emacs.Core (mkFunctionFromCallable, message)
+import Emacs.Core (mkFunctionFromCallable, message, funcall2)
 import Emacs.Type
 import Relude
 
@@ -10,6 +10,9 @@ fooBar n = n + 33
 
 fooBar0 :: Int
 fooBar0 = 3333
+
+sayHelloInEmacs :: Text -> EmacsM ()
+sayHelloInEmacs msg = void $ funcall2 "message" ("Interpolate here: %s" :: Text) msg
 
 sayHello :: EmacsM ()
 sayHello = putStrLn "Hello from HINT"
