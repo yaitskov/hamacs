@@ -2,9 +2,6 @@
 module Emacs.Internal (
     module Emacs.Type,
     nonLocalExitThrow,
-    -- _make_integer,
-    -- _extract_integer,
-    -- initState,
     mkGlobalRef,
     initCtx,
     getEnv,
@@ -22,7 +19,6 @@ module Emacs.Internal (
     isNil,
     -- mk
     mkFunction,
-    -- mkHintFunction,
     mkInteger,
     mkString,
     intern,
@@ -35,43 +31,22 @@ module Emacs.Internal (
     checkExitStatus
     ) where
 
-import Unsafe.Coerce ( unsafeCoerce )
--- import Prelude (error)
--- import Protolude hiding (mkInteger, typeOf)
-import Data.Text.Foreign qualified as TF
-import Relude -- hiding (mkInteger, typeOf)
 import Control.Exception (catch, throwIO)
--- import Control.Concurrent.STM.TQueue -- ( writeTQueue )
--- import Data.IORef
--- import Emacs.Hint
+import Data.Text.Foreign qualified as TF
 import Emacs.Type
-import qualified Data.List as List
--- import qualified Data.Map as Map
-import Foreign.C.Types
 import Foreign.C.String
+import Foreign.C.Types
+import Foreign.Marshal.Alloc
+import Foreign.Marshal.Array
 import Foreign.StablePtr
 import Foreign.Storable
-import Foreign.Marshal.Array
-import Foreign.Marshal.Alloc
 import GHC.Ptr
--- import qualified GHC.Foreign as GHC
--- import GHC.IO.Encoding.UTF8 (utf8)
--- import System.IO.Unsafe ( unsafePerformIO )
-
--- initState :: MonadIO m => m PState
--- initState = do
---   mapRef <- liftIO $ newIORef mempty
---   return $ PState mapRef "Value of AccessFromHint field"
+import qualified Data.List as List
+import Relude
+import Unsafe.Coerce ( unsafeCoerce )
 
 initCtx :: MonadIO m => EmacsEnv -> m Ctx
 initCtx env = pure env
-  -- pstate <- initState
-  -- pstatep <- liftIO $ newStablePtr pstate
-  -- return $ Ctx pstatep pstate env
-
--- getPStateStablePtr :: (MonadIO m, HasEmacsCtx m) => m (StablePtr PState)
--- getPStateStablePtr =
---   pstateStablePtr <$> getEmacsCtx
 
 getEnv :: (Monad m, HasEmacsCtx m) => m EmacsEnv
 getEnv = getEmacsCtx
@@ -267,20 +242,6 @@ checkExitStatus action = do
     liftIO . throwIO $ EmacsException funcallExit a0 a1
   return v
 
--- checkHintExitStatus :: IO a -> EmacsHintM a
--- checkHintExitStatus action = do
---   v <- liftIO action
---   funcallExit <- nonLocalExitCheck
---   when (funcallExit /= EmacsFuncallExitReturn) $ do
---     (_,a0,a1) <- nonLocalExitGet
---     nonLocalExitClear
---     liftIO . throwIO $ EmacsException funcallExit a0 a1
---   return v
-
-
-
-
---   emacs_value (*make_integer) (emacs_env *env, intmax_t value);
 foreign import ccall _make_integer
   :: EmacsEnv
   -> CIntMax

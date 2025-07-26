@@ -6,26 +6,24 @@ import Control.Exception (AssertionFailed (..))
 import Control.Monad.Catch
 import Control.Monad.IO.Unlift
 import Data.Map.Strict qualified as M
+import Data.Time.Clock.System
 import Emacs
 import Emacs.Hint
 import Emacs.Internal ()
 import Emacs.Prelude
 import Emacs.Text
---import Relude (LText)
-import Data.Time.Clock.System
--- import Data.Time.Format
-
 import Foreign.C.Types
-import Language.Haskell.Interpreter qualified as HI
 import Language.Haskell.Interpreter (ModuleName, MonadInterpreter, ModuleElem (Fun), Id)
+import Language.Haskell.Interpreter qualified as HI
 import Language.Haskell.Interpreter.Unsafe qualified as HI
-import UnliftIO.Environment
 import System.FilePath
 import System.IO.Unsafe ( unsafePerformIO )
+import Text.Pretty.Simple ( pPrintForceColor )
 import UnliftIO.Concurrent ( forkIO, modifyMVar_)
 import UnliftIO.Directory
-import UnliftIO.STM ( writeTQueue, atomically, newTQueueIO, TQueue )
+import UnliftIO.Environment
 import UnliftIO.Exception
+import UnliftIO.STM ( writeTQueue, atomically, newTQueueIO, TQueue )
 
 
 foreign export ccall "emacs_module_init" emacsModuleInit :: EmacsModule
@@ -108,7 +106,8 @@ runHintOn packName q = catchAny go oops
         ) >>=
        \case
          Left e -> do
-           putStrLn $ "Hint failed " <> show e
+           putLText "Hint failed: "
+           pPrintForceColor e
          Right () -> do
            putStrLn $ "Hint succes "
 

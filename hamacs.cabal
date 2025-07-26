@@ -66,6 +66,7 @@ library
       , generic-lens < 3
       , hint
       , lens < 6
+      , pretty-simple < 5
       , mtl
       , refined < 1
       , relude
