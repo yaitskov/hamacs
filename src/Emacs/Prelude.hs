@@ -5,7 +5,7 @@ module Emacs.Prelude
   ) where
 
 
-import Control.Lens as X ((^.), (%~), _Left, _Right)
+import Control.Lens as X ((^.), (%~), _Left, _Right, findMOf, each)
 import Data.Functor.Identity as X
 import Emacs.Pretty as X
 import Refined as X

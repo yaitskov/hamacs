@@ -4,7 +4,6 @@
 
 module Emacs.Package where
 
--- import UnliftIO.Concurrent
 import Data.Aeson as A
 import Emacs.Prelude
 import Emacs.Validation

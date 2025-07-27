@@ -1,6 +1,5 @@
 module HaPack where
 
-
 import Emacs.Core (mkFunctionFromCallable, message, funcall2)
 import Emacs.Type
 import Relude

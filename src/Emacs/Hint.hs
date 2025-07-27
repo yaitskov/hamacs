@@ -6,76 +6,25 @@ module Emacs.Hint where
 
 import Data.Text.Foreign qualified as TF
 import Emacs.Core
-import Emacs.Prelude
 import Emacs.Function
+import Emacs.Prelude
 import Foreign.C.String
 import Foreign.C.Types
+import Foreign.Marshal.Array
 import Foreign.Ptr
--- import Foreign.Storable
 import Foreign.StablePtr
 import System.IO.Unsafe
-import UnliftIO.Concurrent (ThreadId)
 import UnliftIO.Exception ( catchAny, throwIO )
 import UnliftIO.STM ( TQueue, writeTQueue, readTQueue, atomically)
-import Foreign.Marshal.Array
--- import Foreign.Marshal.Alloc
+import Emacs.Hint.Type
 
 unitStablePtr :: StablePtr ()
 unitStablePtr = unsafePerformIO (newStablePtr ())
-
-type HintFunctionStub
-  = EmacsEnv
-  -> CPtrdiff
-  -> Ptr (Ptr ())
-  -> StablePtr ()
-  -> IO EmacsValue
 
 foreign import ccall "wrapper" wrapHintFunctionStub
   :: HintFunctionStub
   -> IO (FunPtr HintFunctionStub)
 
-data HintReq
-  = EvalHsCode Text
-  | PingHint
-  | SyncPing Text (MVar ())
-  | PutMVarOnReady (MVar ())
-  | CallFun
-      ([EmacsValue] -> EmacsM EmacsValue) -- (FunPtr EFunctionStub)
-      [EmacsValue] --  (Ptr (Ptr ()))
-      (MVar (Either SomeException EmacsValue))
-      EmacsEnv
-  | KillHint
-
-data Hint
-  = Hint
-    { hintQueue :: TQueue HintReq
-    , hintThreadId :: ThreadId
-    }
-
-newtype GhcDbPath = GhcDbPath { unGhcDbPath :: FilePath }  deriving (Show, Eq)
-
-data EmacsHintConf
-  = EmacsHintConf
-  { packageName :: Text
-  , packageInQueue :: TQueue HintReq
-  , emacsCtxM :: Ctx
-  }
-
-newtype EmacsHintM a = EmacsHintM (ReaderT EmacsHintConf IO a)
-  deriving newtype (Applicative, Functor, Monad, MonadIO, MonadUnliftIO)
-
-instance MonadReader EmacsHintConf EmacsHintM where
-   ask = EmacsHintM ask
-   local f (EmacsHintM m) = EmacsHintM (local f m)
-
-instance HasEmacsCtx EmacsHintM where
-  getEmacsCtx = EmacsHintM (asks (.emacsCtxM))
-
-data HintQueueWorkerConf
-  = HintQueueWorkerConf
-  { packageName :: Text
-  , packageInQueue :: TQueue HintReq
-  }
 
 runHintQueue :: ReaderT HintQueueWorkerConf IO ()
 runHintQueue = do

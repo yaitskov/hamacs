@@ -41,14 +41,20 @@ library
         TypeFamilies
     exposed-modules:
         Emacs
+        Emacs.Api.Lisp.Subr
+        Emacs.Api.Native.Package
+        Emacs.Api.Native.String
         Emacs.Command
         Emacs.Core
         Emacs.Function
         Emacs.Hint
+        Emacs.Hint.Start
+        Emacs.Hint.Type
         Emacs.Init
         Emacs.Internal
         Emacs.NAdvice
         Emacs.Package
+        Emacs.Package.Cabal
         Emacs.Prelude
         Emacs.Pretty
         Emacs.Symbol
@@ -56,6 +62,8 @@ library
         Emacs.Type
         Emacs.Validation
     build-depends:
+      , Cabal < 4
+      , Cabal-syntax < 4
       , aeson < 3
       , base >=4.7 && <5
       , cases

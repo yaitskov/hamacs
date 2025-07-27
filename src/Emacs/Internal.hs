@@ -22,6 +22,7 @@ module Emacs.Internal (
     mkInteger,
     mkString,
     intern,
+    intern',
     mkList,
     mkNil,
     mkT,
@@ -82,7 +83,7 @@ typeOf ev = do
     Just (_, t) -> return t
     Nothing     -> error "no type"
 
-isTypeOf :: EmacsType -> EmacsValue -> EmacsM Bool
+isTypeOf :: (MonadIO m, HasEmacsCtx m) => EmacsType -> EmacsValue -> m Bool
 isTypeOf ty ev = do
   t <- typeOf ev
   return $ t == ty
@@ -155,13 +156,13 @@ foreign import ccall _is_not_nil
   -> EmacsValue
   -> IO CInt
 
-isNotNil :: EmacsValue -> EmacsM Bool
+isNotNil :: (MonadIO m, HasEmacsCtx m) => EmacsValue -> m Bool
 isNotNil ev = do
   env <- getEnv
   r <- liftIO $ _is_not_nil env ev
   return (r == 1)
 
-isNil :: EmacsValue -> EmacsM Bool
+isNil :: (MonadIO m, HasEmacsCtx m) => EmacsValue -> m Bool
 isNil = (fmap . fmap) not isNotNil
 
 -- TODO: arity と doc は Arity と Doc 型にするべきかな。
@@ -272,6 +273,9 @@ foreign import ccall _intern
   :: EmacsEnv
   -> CString
   -> IO EmacsValue
+
+intern' :: (MonadIO m, HasEmacsCtx m) => Text -> m EmacsSymbol
+intern' = pure . EmacsSymbol <=< intern
 
 intern :: (MonadIO m, HasEmacsCtx m) => Text -> m EmacsValue
 intern str = create

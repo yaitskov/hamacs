@@ -6,10 +6,12 @@ module Emacs.Core (
     defmodule,
     mkCons,
     ToEmacsValue(..),
+    FromEmacsValue(..),
     ToEmacsSymbol(..),
     ToEmacsFunction(..),
     funcall1, funcall2, funcall3,
     mkFunctionFromCallable,
+    extractList,
     Callable(..),
     --
     car,
@@ -19,15 +21,14 @@ module Emacs.Core (
     provide,
     message,
     print,
+
     ) where
 
-import Prelude()
-
-import Relude  hiding (print)
-
-import Emacs.Type
+import Control.Exception (AssertionFailed (..))
+import Data.Text qualified as T
 import Emacs.Internal
-
+import Emacs.Prelude hiding (print)
+import UnliftIO.Exception ( throwIO )
 
 defmodule :: Text -> EmacsM a -> EmacsModule
 defmodule name mod' ert = do
@@ -177,7 +178,7 @@ funcall3 fname ev0 ev1 ev2 =
 
 
 class FromEmacsValue h where
-  fromEv :: EmacsValue -> EmacsM h
+  fromEv :: (MonadIO m, HasEmacsCtx m) => EmacsValue -> m h
 
 instance FromEmacsValue Int where
   fromEv = extractInteger
@@ -190,6 +191,9 @@ instance FromEmacsValue EmacsValue where
 
 instance FromEmacsValue EmacsFunction where
   fromEv = pure . EmacsFunction
+
+instance FromEmacsValue a => FromEmacsValue [a] where
+  fromEv = mapM fromEv <=< extractList
 
 class Callable a where
     call :: a -> [EmacsValue] -> EmacsM (Either Text EmacsValue)
@@ -263,3 +267,21 @@ car = funcall1 "car"
 
 cdr :: (MonadIO m, HasEmacsCtx m) => EmacsValue -> m EmacsValue
 cdr = funcall1 "cdr"
+
+extractList :: (MonadIO m, HasEmacsCtx m) => EmacsValue -> m [EmacsValue]
+extractList ev = do
+  isTypeOf ECons ev >>= \case
+    False ->
+      isTypeOf ENil ev >>= \case
+        False ->
+          throwIO . AssertionFailed . T.unpack =<< fromEv =<< funcall2 "format" ("Expected a list but got: %s" :: Text) ev
+        True -> pure []
+    True -> go ev
+  where
+    go l = do
+      nonNil <- isNotNil l
+      if nonNil
+      then
+        (:) <$> (car l) <*> (go =<< cdr l)
+      else
+        pure []
