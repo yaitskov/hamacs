@@ -1,6 +1,7 @@
-;;; package --- Script loading and interacting with Hamacs
+;;; run.el --- Script loading and interacting with Hamacs  -*- lexical-binding: t; -*-
 ;;; Commentary:
 ;;; Code:
+(add-to-list 'load-path "packages")
 (message "Before mymodule is required")
 (require 'hamacs)
 (message "After mymodule is required")

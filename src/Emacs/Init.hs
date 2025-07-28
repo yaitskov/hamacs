@@ -6,9 +6,8 @@ import Data.Map.Strict qualified as M
 import Data.Time.Clock.System
     ( SystemTime(systemSeconds), getSystemTime )
 import Data.Text qualified as T
-import Emacs
+import Emacs ( EmacsM, EmacsModule, defmodule, intern, defun )
 import Emacs.Api.Native.Package ( loadPath, require )
-import Emacs.Api.Lisp.Subr ( addToList )
 import Emacs.Hint.Start ( runHintOn )
 import Emacs.Hint.Type
     ( GhcDbPath(..), HintReq(PutMVarOnReady, SyncPing) )
@@ -46,7 +45,6 @@ findHamacsPackageCabal packNameTxt = do
 emacsModuleInit :: EmacsModule
 emacsModuleInit = defmodule "hamacs" $ do
   mapM_ (require <=< intern) ["subr-x", "package"]
-  (`addToList` ("script" :: Text)) =<< intern "load-path"
   defun "hamacs-ping-package" pingPackage
   defun "hamacs-load-package" loadHamacsPackage
   where
