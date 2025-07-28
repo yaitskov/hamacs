@@ -68,7 +68,12 @@ runHintOn cabalFile q = catchAny go oops
               putStrLn $ "before unsafeInterpret"
 
               forM_ (modulesExportedToHint hp) $ \exMod -> do
-                fqFnNames <- fmap (\fname -> (fname, exMod <> "." <> fname)) <$> modFunctions exMod
+                fqFnNames <- fmap (\fname -> ( fname
+                                             , case fname of
+                                                 '(' : fnameTail -> '(' : exMod <> "." <> fnameTail
+                                                 _               -> exMod <> "." <> fname
+                                             )
+                                  ) <$> modFunctions exMod
                 -- printDoc $ hsep ["Functions of",  doc exportingModule, ":"
                 --                   <> linebreak <> tab (vsep fnNames) <> linebreak
                 --                 ]

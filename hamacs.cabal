@@ -52,6 +52,18 @@ library
         Emacs.Hint.Type
         Emacs.Init
         Emacs.Internal
+        Emacs.Internal.Check
+        Emacs.Internal.Eq
+        Emacs.Internal.Funcall
+        Emacs.Internal.FuncallN
+        Emacs.Internal.Function
+        Emacs.Internal.Integer
+        Emacs.Internal.Intern
+        Emacs.Internal.List
+        Emacs.Internal.Nil
+        Emacs.Internal.String
+        Emacs.Internal.T
+        Emacs.Internal.TypeOf
         Emacs.NAdvice
         Emacs.Package
         Emacs.Package.Cabal
@@ -60,6 +72,13 @@ library
         Emacs.Symbol
         Emacs.Text
         Emacs.Type
+        Emacs.Type.CallableInstances
+        Emacs.Type.FromEmacsValueInstances
+        Emacs.Type.ToEmacsFunctionInstances
+        Emacs.Type.ToEmacsKeywordInstances
+        Emacs.Type.ToEmacsListInstances
+        Emacs.Type.ToEmacsSymbolInstances
+        Emacs.Type.ToEmacsValueInstances
         Emacs.Validation
     build-depends:
       , Cabal < 4

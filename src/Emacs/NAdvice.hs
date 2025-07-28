@@ -3,7 +3,8 @@ module Emacs.NAdvice where
 
 import Cases (spinalize)
 import Emacs.Core
-import Relude
+import Emacs.Prelude
+import Emacs.Type.ToEmacsFunctionInstances ()
 
 -- (advice-add SYMBOL WHERE FUNCTION &optional PROPS)
 --
@@ -61,7 +62,7 @@ around name ff = do
     wrap newf =
       let wf :: [EmacsValue] -> EmacsM EmacsValue
           wf (func:args) = do
-            res <- call (newf (funcall func args)) args
+            res <- call (newf (funcall (EmacsSymbol func) args)) args
             case res of
               Right ev -> return ev
               -- TODO: convert EmacsValue to m String somehow

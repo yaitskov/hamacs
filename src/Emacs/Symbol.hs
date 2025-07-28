@@ -1,8 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Emacs.Symbol where
 
-import Relude
-import Emacs.Core
+import Emacs.Prelude
+import Emacs.Type
+    ( EmacsValue, ToEmacsValue, EmacsM, Symbol(Symbol) )
+import Emacs.Type.ToEmacsValueInstances ()
+import Emacs.Type.CallableInstances ()
+import Emacs.Type.ToEmacsSymbolInstances ()
+import Emacs.Type.ToEmacsFunctionInstances ()
+import Emacs.Internal.FuncallN ( funcall1, funcall2, funcall3 )
+import Emacs.Internal.Nil ( isNotNil )
+import Emacs.Internal.String ( extractString )
 
 allSymbols :: EmacsM [EmacsValue]
 allSymbols = do

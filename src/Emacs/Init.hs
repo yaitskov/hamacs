@@ -2,9 +2,6 @@
 
 module Emacs.Init where
 
-import Control.Exception (AssertionFailed (..))
-
-
 import Data.Map.Strict qualified as M
 import Data.Time.Clock.System
     ( SystemTime(systemSeconds), getSystemTime )
@@ -24,7 +21,6 @@ import System.IO.Unsafe ( unsafePerformIO )
 import UnliftIO.Concurrent ( forkIO, modifyMVar_)
 import UnliftIO.Directory ( doesDirectoryExist, doesFileExist )
 import UnliftIO.Environment ( lookupEnv )
-import UnliftIO.Exception ( throwIO )
 import UnliftIO.STM ( writeTQueue, atomically, newTQueueIO, TQueue )
 
 foreign export ccall "emacs_module_init" emacsModuleInit :: EmacsModule
@@ -49,24 +45,10 @@ findHamacsPackageCabal packNameTxt = do
 
 emacsModuleInit :: EmacsModule
 emacsModuleInit = defmodule "hamacs" $ do
-  mapM_ (require <=< intern') ["subr-x", "package"]
-  (`addToList` ("script" :: Text)) =<< intern' "load-path"
-  -- Hint q _hintid <- initHint
-  -- defun "mysquare" $ \i -> do
-  --   message "haskell squre function called"
-  --   return (i*i :: Int)
-  -- defun "myplus" $ \ x y -> do
-  --   message "haskell plus function called"
-  --   return (x + y :: Int)
-  -- defun "hint-how-are-you" (ping q) -- $ \ (_ :: Int) -> do
-  -- defun "eval-in-calling-thread" evalSync
+  mapM_ (require <=< intern) ["subr-x", "package"]
+  (`addToList` ("script" :: Text)) =<< intern "load-path"
   defun "hamacs-ping-package" pingPackage
   defun "hamacs-load-package" loadHamacsPackage
-  -- defun "eval-haskell" $ \hsCode -> do
-  --   message "eval-haskell"
-  --   message $ "Eval [" <> hsCode <> "]"
-  --   atomically . writeTQueue q $ EvalHsCode hsCode
-  --   return (777 :: Int)
   where
     pingPackage :: Text -> EmacsM ()
     pingPackage pkgName = do
@@ -80,7 +62,6 @@ emacsModuleInit = defmodule "hamacs" $ do
           takeMVar em
           afterRespond <- liftIO (systemSeconds <$> getSystemTime)
           putTextLn $ "Duration: " <> show (afterRespond - beforeCall) <> " seconds"
-
 
     loadHamacsPackage :: Text -> EmacsM Text
     loadHamacsPackage hmPgkName = do

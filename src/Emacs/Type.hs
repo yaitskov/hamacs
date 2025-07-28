@@ -74,7 +74,7 @@ castGlobalToEmacsValue :: GlobalEmacsValue -> EmacsValue
 castGlobalToEmacsValue (GlobalEmacsValue p) =
   EmacsValue p
 
-newtype EmacsSymbol   = EmacsSymbol   EmacsValue
+newtype EmacsSymbol   = EmacsSymbol   { unEmacsSymbol :: EmacsValue }
 newtype EmacsKeyword  = EmacsKeyword  EmacsValue
 newtype EmacsCons     = EmacsCons     EmacsValue
 newtype EmacsFunction = EmacsFunction EmacsValue
@@ -110,3 +110,42 @@ data InteractiveForm = InteractiveNoArgs
 
 newtype EmDoc = EmDoc Text
 newtype Arity = Arity Int
+
+-- AsEmacsValue
+class    AsEmacsValue s             where asEmacsValue :: s -> EmacsValue
+instance AsEmacsValue EmacsSymbol   where asEmacsValue (EmacsSymbol ev) = ev
+instance AsEmacsValue EmacsKeyword  where asEmacsValue (EmacsKeyword ev) = ev
+instance AsEmacsValue EmacsCons     where asEmacsValue (EmacsCons ev) = ev
+instance AsEmacsValue EmacsList     where asEmacsValue (EmacsList ev) = ev
+instance AsEmacsValue EmacsFunction where asEmacsValue (EmacsFunction ev) = ev
+
+class Callable a where
+    call :: a -> [EmacsValue] -> EmacsM (Either Text EmacsValue)
+    arity :: a -> Int
+
+class ToEmacsValue h where
+  toEv :: (MonadIO m, HasEmacsCtx m) => h -> m EmacsValue
+
+class FromEmacsValue h where
+  fromEv :: (MonadIO m, HasEmacsCtx m) => EmacsValue -> m h
+
+class ToEmacsValue s => ToEmacsSymbol s where
+  toEmacsSymbol :: (MonadIO m, HasEmacsCtx m) => s -> m EmacsSymbol
+
+class ToEmacsValue s => ToEmacsCons s where
+  toEmacsCons :: (MonadIO m, HasEmacsCtx m) => s -> m EmacsCons
+
+class ToEmacsValue s => ToEmacsKeyword s where
+  toEmacsKeyword :: (MonadIO m, HasEmacsCtx m) => s -> m EmacsKeyword
+
+class ToEmacsValue s => ToEmacsList s where
+  toEmacsList :: (MonadIO m, HasEmacsCtx m) => s -> m EmacsList
+
+class (Callable s,ToEmacsValue s) => ToEmacsFunction s where
+  toEmacsFunction :: (MonadIO m, HasEmacsCtx m) => s -> m EmacsFunction
+
+-- Logging here is not a good idea. When passing high order function,
+-- which could be invoked manytimes, its get quite slow.
+runEmacsM :: MonadIO m => Ctx -> EmacsM a -> m a
+runEmacsM ctx action =
+  liftIO $ runReaderT action ctx
