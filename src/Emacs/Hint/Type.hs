@@ -18,17 +18,6 @@ type HintFunctionStub
   -> StablePtr ()
   -> IO EmacsValue
 
-data HintReq
-  = EvalHsCode Text
-  | PingHint
-  | SyncPing Text (MVar ())
-  | PutMVarOnReady (MVar ())
-  | CallFun
-      ([EmacsValue] -> EmacsM EmacsValue)
-      [EmacsValue]
-      (MVar (Either SomeException EmacsValue))
-      EmacsEnv
-  | KillHint
 
 data Hint
   = Hint
@@ -38,25 +27,27 @@ data Hint
 
 newtype GhcDbPath = GhcDbPath { unGhcDbPath :: FilePath }  deriving (Show, Eq)
 
-data EmacsHintConf
-  = EmacsHintConf
-  { packageName :: Text
-  , packageInQueue :: TQueue HintReq
-  , emacsCtxM :: Ctx
-  }
+type EmacsHintM = EmacsM
 
-newtype EmacsHintM a = EmacsHintM (ReaderT EmacsHintConf IO a)
-  deriving newtype (Applicative, Functor, Monad, MonadIO, MonadUnliftIO)
+-- data EmacsHintConf
+--   = EmacsHintConf
+--   { packageName :: Text
+--   , packageInQueue :: TQueue HintReq
+--   , emacsCtxM :: Ctx
+--   }
 
-instance MonadReader EmacsHintConf EmacsHintM where
-   ask = EmacsHintM ask
-   local f (EmacsHintM m) = EmacsHintM (local f m)
+-- newtype EmacsHintM a = EmacsHintM (ReaderT EmacsHintConf IO a)
+--   deriving newtype (Applicative, Functor, Monad, MonadIO, MonadUnliftIO)
 
-instance HasEmacsCtx EmacsHintM where
-  getEmacsCtx = EmacsHintM (asks (.emacsCtxM))
+-- instance MonadReader EmacsHintConf EmacsHintM where
+--    ask = EmacsHintM ask
+--    local f (EmacsHintM m) = EmacsHintM (local f m)
 
-data HintQueueWorkerConf
-  = HintQueueWorkerConf
-  { packageName :: Text
-  , packageInQueue :: TQueue HintReq
-  }
+-- instance HasEmacsCtx EmacsHintM where
+--   getEmacsCtx = EmacsHintM (asks (.emacsCtxM))
+
+-- data HintQueueWorkerConf
+--   = HintQueueWorkerConf
+--   { packageName :: Text
+--   , packageInQueue :: TQueue HintReq
+--   }

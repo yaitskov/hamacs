@@ -2,7 +2,6 @@ module Emacs.Internal.Eq where
 
 import Emacs.Prelude
 import Emacs.Type
-    ( HasEmacsCtx(..), EmacsValue(..), EmacsEnv(..), ToEmacsValue(..) )
 import Foreign.C.Types ( CInt(..) )
 
 -- eq は bool 返すのだが、haskell では CBool は用意していないので int
@@ -14,7 +13,7 @@ foreign import ccall _eq
   -> EmacsValue
   -> IO CInt
 
-eq :: (MonadIO m, HasEmacsCtx m, ToEmacsValue a) => a -> a -> m Bool
+eq :: (MonadEmacs m, ToEmacsValue a) => a -> a -> m Bool
 eq ev0' ev1' = do
   env <- getEmacsCtx
   ev0 <- toEv ev0'

@@ -2,7 +2,7 @@
 module Emacs.Internal.String where
 
 import Data.Text.Foreign qualified as TF
-import Emacs.Type ( HasEmacsCtx(..), EmacsValue(..), EmacsEnv(..) )
+import Emacs.Type
 import Emacs.Prelude
 import Emacs.Internal.Check ( checkExitStatus )
 import Foreign.C.String ( CString )

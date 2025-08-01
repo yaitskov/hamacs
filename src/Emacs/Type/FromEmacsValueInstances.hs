@@ -13,6 +13,9 @@ instance FromEmacsValue Int where
 instance FromEmacsValue Text where
   fromEv = extractString
 
+instance FromEmacsValue () where
+  fromEv = void . pure
+
 instance FromEmacsValue EmacsValue where
   fromEv = pure
 

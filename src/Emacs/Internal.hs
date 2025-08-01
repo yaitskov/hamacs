@@ -28,7 +28,7 @@ module Emacs.Internal (
     checkExitStatus
     ) where
 
-import Emacs.Prelude
+import Emacs.Prelude hiding (typeOf)
 import Emacs.Type
 import Emacs.Type.CallableInstances ()
 import Emacs.Type.FromEmacsValueInstances ()
@@ -40,10 +40,10 @@ import Emacs.Internal.Eq ( eq )
 import Emacs.Internal.Check ( checkExitStatus, nonLocalExitThrow )
 import Emacs.Internal.Intern ( intern, intern' )
 import Emacs.Internal.Funcall ( funcall )
-import Emacs.Internal.Function ( mkFunction, errorHandle )
+import Emacs.Internal.Function ( mkFunction, errorHandle, mkList )
 import Emacs.Internal.String ( mkString, extractString )
 import Emacs.Internal.Integer ( mkInteger, extractInteger )
-import Emacs.Internal.List ( mkList )
+--import Emacs.Internal.List ( mkList )
 import Emacs.Internal.Nil ( mkNil, isNotNil, isNil )
 import Emacs.Internal.T ( mkT )
 import Emacs.Internal.TypeOf ( typeOf, isTypeOf )

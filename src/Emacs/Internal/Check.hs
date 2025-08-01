@@ -35,7 +35,7 @@ foreign import ccall _non_local_exit_signal
   -> EmacsValue
   -> IO ()
 
-nonLocalExitSignal :: EmacsSymbol -> EmacsValue -> EmacsM ()
+nonLocalExitSignal :: MonadEmacs m => EmacsSymbol -> EmacsValue -> m ()
 nonLocalExitSignal (EmacsSymbol sym) val = do
   env <- getEmacsCtx
   liftIO $ _non_local_exit_signal env sym val

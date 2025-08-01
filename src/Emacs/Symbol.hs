@@ -3,16 +3,15 @@ module Emacs.Symbol where
 
 import Emacs.Prelude
 import Emacs.Type
-    ( EmacsValue, ToEmacsValue, EmacsM, Symbol(Symbol) )
 import Emacs.Type.ToEmacsValueInstances ()
 import Emacs.Type.CallableInstances ()
 import Emacs.Type.ToEmacsSymbolInstances ()
 import Emacs.Type.ToEmacsFunctionInstances ()
-import Emacs.Internal.FuncallN ( funcall1, funcall2, funcall3 )
+import Emacs.Internal.Function -- allN ( funcall1, funcall2, funcall3 )
 import Emacs.Internal.Nil ( isNotNil )
 import Emacs.Internal.String ( extractString )
 
-allSymbols :: EmacsM [EmacsValue]
+allSymbols :: MonadEmacs m => m [EmacsValue]
 allSymbols = do
   ref <- liftIO $ newIORef []
   _ <- funcall1 "mapatoms" (accum ref)
@@ -28,21 +27,21 @@ allSymbols = do
 --  3. function
 --  4. property list (* can have buffer local list)
 
-getSymbolName :: Text -> EmacsM Text
+getSymbolName :: MonadEmacs m => Text -> m Text
 getSymbolName name =
   extractString =<< funcall1 "symbol-name" (Symbol name)
 
-setValue :: ToEmacsValue a => Text -> a -> EmacsM EmacsValue
+setValue :: (MonadEmacs m, ToEmacsValue a) => Text -> a -> m EmacsValue
 setValue name val =
   funcall2 "set" (Symbol name) val
 
 -- Could throw exception if the symbol is not setted.
-getValue :: Text -> EmacsM EmacsValue
+getValue :: MonadEmacs m => Text -> m EmacsValue
 getValue name =
   funcall1 "symbol-value" (Symbol name)
 
 -- if Symbol exists (included in obarray) and a value is bounded.
-isBounded :: Text -> EmacsM Bool
+isBounded :: MonadEmacs m => Text -> m  Bool
 isBounded name =
   isNotNil =<< funcall1 "boundp" (Symbol name)
 
@@ -50,25 +49,25 @@ isBounded name =
 --
 -- If the variable is buffer local, you need to use
 -- getDefaultValue/setDefaultValue to set/get the global variable.
-getDefaultValue :: Text -> EmacsM EmacsValue
+getDefaultValue :: MonadEmacs m => Text -> m EmacsValue
 getDefaultValue name =
   funcall1 "default-value" (Symbol name)
 
-setDefaultValue :: ToEmacsValue a => Text -> a -> EmacsM EmacsValue
+setDefaultValue :: (MonadEmacs m, ToEmacsValue a) => Text -> a -> m EmacsValue
 setDefaultValue name val =
   funcall2 "set-default" (Symbol name) val
 
-symbolProperty :: Text -> Text -> EmacsM (Maybe EmacsValue)
+symbolProperty :: MonadEmacs m => Text -> Text -> m (Maybe EmacsValue)
 symbolProperty name property = do
   ev <- funcall2 "get" (Symbol name) (Symbol property)
   b <- isNotNil ev
   return $ if b then Just ev else Nothing
 
 setSymbolProperty
-  :: (ToEmacsValue v)
+  :: (MonadEmacs m, ToEmacsValue v)
   => Text
   -> Text
   -> v
-  -> EmacsM EmacsValue
+  -> m EmacsValue
 setSymbolProperty name property value =
   funcall3 "put" (Symbol name) (Symbol property) value

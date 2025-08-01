@@ -8,7 +8,7 @@ import Data.Text
 import Emacs.Core
 import Emacs.Prelude
 
-setCommand :: Text -> InteractiveForm -> EmacsValue -> EmacsM ()
+setCommand :: MonadEmacs m => Text -> InteractiveForm -> EmacsValue -> m ()
 setCommand fname _form f = do
   fnameQ <- intern fname
   interactiveFormQ <- intern "interactive-form"
@@ -20,7 +20,7 @@ defcommand'
   -> EmDoc
   -> InteractiveForm
   -> Arity
-  -> ([EmacsValue] -> EmacsM EmacsValue)
-  -> EmacsM ()
+  -> ([EmacsValue] -> NativeEmacsM EmacsValue)
+  -> NativeEmacsM ()
 defcommand' fname (EmDoc doc') form (Arity comArity) f =
   setCommand fname form =<< mkFunction f comArity comArity doc'

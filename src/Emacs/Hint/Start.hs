@@ -6,8 +6,9 @@ module Emacs.Hint.Start where
 
 
 import Distribution.Types.PackageName ( unPackageName )
-import Emacs ( EmacsM )
-import Emacs.Hint.Type
+-- import Emacs ( EmacsM )
+-- import Emacs.Hint.Type
+import Emacs.Type
 import Emacs.Package.Cabal
 import Emacs.Internal ()
 import Emacs.Prelude
@@ -35,7 +36,7 @@ isEmacsCompatibleFunction fName =
       putStrLn $ "Pass " <> fName <> " as " <> ok
       pure True
 
-runHintOn :: CabalFilePath -> TQueue HintReq -> EmacsM ()
+runHintOn :: CabalFilePath -> TQueue HintReq -> NativeEmacsM ()
 runHintOn cabalFile q = catchAny go oops
   where
     oops (SomeException se) = do
@@ -50,7 +51,7 @@ runHintOn cabalFile q = catchAny go oops
       ]
 
     hintImports = [ "UnliftIO.STM", "Emacs.Type", "Emacs.Core", "Emacs.Hint.Type", "Emacs.Hint", "Relude" ]
-    go :: EmacsM ()
+    go :: NativeEmacsM ()
     go =
       mkHamacsPackage <$> parseCabalFile cabalFile >>= \case
         Left e -> fail $ toString e
@@ -83,15 +84,15 @@ runHintOn cabalFile q = catchAny go oops
                 forM_ emacsCompatibleOnes $ \(fnName, fqFnName) -> do
                   let cmd :: Text = "defunHint \"" <> packName <> "-" <>
                         toText (trimX '(' ')' fnName) <> "\" " <> toText fqFnName
-                  (EmacsHintM r2) :: EmacsHintM () <- HI.unsafeInterpret (toString cmd)  "EmacsHintM ()"
-                  liftIO (runReaderT r2 $ EmacsHintConf packName q emcEnv)
+                  r2 :: EmacsM () <- HI.unsafeInterpret (toString cmd)  "EmacsM ()"
+                  liftIO (runReaderT r2 $ Ctx emcEnv q)
 
-              r <- HI.unsafeInterpret "runHintQueue" "ReaderT HintQueueWorkerConf IO ()"
-              liftIO (runReaderT r $ HintQueueWorkerConf packName q)
+              r :: HintQueueRunner <- HI.unsafeInterpret "runHintQueue" "HintQueueRunner"
+              liftIO (runReaderT r q)
             ) >>=
            \case
              Left e -> do
                putLText "Hint failed: "
                pPrintForceColor e
-             Right () -> do
-               putStrLn $ show cabalFile <> " is loaded"
+             Right ev -> do
+               putStrLn $ show cabalFile <> " is exited " <> show ev

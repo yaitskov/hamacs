@@ -46,23 +46,23 @@ adviceAdd'
   => s
   -> Where
   -> f
-  -> EmacsM ()
+  -> NativeEmacsM ()
 adviceAdd' target where' func =
   void $ funcall3 "advice-add" target (whereToKeyword where') func
 
-around' :: Callable f => Text -> (EmacsFunction -> f) -> EmacsM ()
+around' :: NativeCallable f => Text -> (EmacsFunction -> f) -> NativeEmacsM ()
 around' name ff = do
   adviceAdd' (Symbol name) Around ff
 
-around :: Callable f => Text -> (EmacsM EmacsValue -> f) -> EmacsM ()
+around :: NativeCallable f => Text -> (NativeEmacsM EmacsValue -> f) -> NativeEmacsM ()
 around name ff = do
   adviceAdd' (Symbol name) Around =<< wrap ff
   where
-    wrap :: Callable f => (EmacsM EmacsValue -> f) -> EmacsM EmacsFunction
+    wrap :: NativeCallable f => (NativeEmacsM EmacsValue -> f) -> NativeEmacsM EmacsFunction
     wrap newf =
-      let wf :: [EmacsValue] -> EmacsM EmacsValue
+      let wf :: [EmacsValue] -> NativeEmacsM EmacsValue
           wf (func:args) = do
-            res <- call (newf (funcall (EmacsSymbol func) args)) args
+            res <- natCall (newf (funcall (EmacsSymbol func) args)) args
             case res of
               Right ev -> return ev
               -- TODO: convert EmacsValue to m String somehow

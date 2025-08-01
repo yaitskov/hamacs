@@ -1,11 +1,10 @@
-module Emacs
-  ( module Emacs.Core
-  , module Emacs.Symbol
-  , module Emacs.Function
-  , module Emacs.Command
-  ) where
+module Emacs (module X) where
 
-import Emacs.Core
-import Emacs.Symbol
-import Emacs.Function
-import Emacs.Command
+import Emacs.Core as X
+import Emacs.Symbol as X
+import Emacs.Function as X
+import Emacs.Command as X
+import Emacs.Hint ()
+import Emacs.Api.Native.Buffer as X
+import Emacs.Api.Native.String as X
+import Emacs.Api.Native.Package as X

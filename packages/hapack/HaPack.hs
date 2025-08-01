@@ -1,7 +1,8 @@
 module HaPack where
 
-import Emacs.Core (mkFunctionFromCallable, message, funcall2)
-import Emacs.Type
+
+-- import Emacs.Core
+import Emacs --  (mkFunctionFromCallable, message, funcall2)
 import Relude
 
 fooBar :: Int -> Int
@@ -20,7 +21,10 @@ third_function :: Int -> Int -> Int
 third_function a b = a + b
 
 iAmEmacsCompatibleFun :: Text -> EmacsM ()
-iAmEmacsCompatibleFun txt = message txt
+iAmEmacsCompatibleFun txt = void $ message txt
 
 ($$$$) :: Int -> Int -> Int
 ($$$$) = (+)
+
+sayHelloFromSaveExcursion :: EmacsM ()
+sayHelloFromSaveExcursion = saveExcursion sayHello
