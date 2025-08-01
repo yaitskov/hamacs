@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Emacs.Type.ToEmacsKeywordInstances where
 
-import Emacs.Internal.Intern
+import Emacs.Internal.Intern ( intern )
 import Emacs.Prelude
 import Emacs.Type
 import Emacs.Type.ToEmacsValueInstances ()

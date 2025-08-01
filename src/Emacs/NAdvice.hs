@@ -4,7 +4,7 @@ module Emacs.NAdvice where
 import Cases (spinalize)
 import Emacs.Core
 import Emacs.Prelude
-import Emacs.Type.ToEmacsFunctionInstances ()
+
 
 -- (advice-add SYMBOL WHERE FUNCTION &optional PROPS)
 --

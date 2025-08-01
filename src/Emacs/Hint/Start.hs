@@ -6,8 +6,6 @@ module Emacs.Hint.Start where
 
 
 import Distribution.Types.PackageName ( unPackageName )
--- import Emacs ( EmacsM )
--- import Emacs.Hint.Type
 import Emacs.Type
 import Emacs.Package.Cabal
 import Emacs.Internal ()

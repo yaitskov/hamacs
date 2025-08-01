@@ -2,10 +2,18 @@
 module Emacs.Internal.T where
 
 import Emacs.Type
-    ( HasEmacsCtx, EmacsValue, EmacsSymbol(EmacsSymbol) )
-import Emacs.Prelude ( MonadIO )
+    ( EmacsValue,
+      ToEmacsValue(..),
+      HasEmacsCtx,
+      EmacsSymbol(EmacsSymbol) )
+import Emacs.Prelude ( Eq, Show, MonadIO )
 import Emacs.Internal.Intern ( intern )
 import Emacs.Internal.Funcall ( funcall )
+
+data T = T deriving (Show, Eq)
+
+instance ToEmacsValue T where
+  toEv !_ = mkT
 
 mkT :: (MonadIO m, HasEmacsCtx m) => m EmacsValue
 mkT = do

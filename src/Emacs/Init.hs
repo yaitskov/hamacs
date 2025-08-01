@@ -3,25 +3,20 @@
 module Emacs.Init where
 
 import Data.Map.Strict qualified as M
--- import Data.Time.Clock.System
---     ( SystemTime(systemSeconds), getSystemTime )
 import Data.Text qualified as T
 import Emacs (defmodule, intern, defun )
 import Emacs.Api.Native.Package ( loadPath, require )
--- import Emacs.Api.Native.String
--- import Emacs.Api.Native.Buffer
 import Emacs.Hint.Start ( runHintOn )
-
 import Emacs.Type
+    ( EmacsModule, HintReq(PutMVarOnReady), MonadEmacs, NativeEmacsM )
 import Emacs.Internal ()
 import Emacs.Package.Cabal ( CabalFilePath(..) )
-import Emacs.Prelude
+import Emacs.Prelude hiding ((<.>))
 import Foreign.C.Types ( CInt(CInt) )
 import System.FilePath ( (</>), (<.>) )
 import System.IO.Unsafe ( unsafePerformIO )
 import UnliftIO.Concurrent ( forkIO, modifyMVar_)
 import UnliftIO.Directory ( doesFileExist )
--- import UnliftIO.Environment ( lookupEnv )
 import UnliftIO.STM ( writeTQueue, atomically, newTQueueIO, TQueue )
 
 foreign export ccall "emacs_module_init" emacsModuleInit :: EmacsModule

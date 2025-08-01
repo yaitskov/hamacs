@@ -35,7 +35,11 @@ instance ToEmacsValue Bool where
   toEv True  = mkT
   toEv False = mkNil
 
--- Nil
+instance ToEmacsValue a => ToEmacsValue (Maybe a) where
+  toEv = \case
+    Nothing -> mkNil
+    Just x -> toEv x
+
 instance ToEmacsValue () where
   toEv _ = mkT
 

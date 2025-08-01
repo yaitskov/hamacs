@@ -36,14 +36,19 @@ library
         ImportQualifiedPost
         LambdaCase
         NoImplicitPrelude
+        OverloadedLabels
+        OverloadedRecordDot
+        OverloadedStrings
         RankNTypes
         ScopedTypeVariables
         TypeFamilies
     exposed-modules:
         Emacs
         Emacs.Api.Lisp.Subr
+        Emacs.Api.Lisp.Replace
         Emacs.Api.Native.Buffer
         Emacs.Api.Native.Package
+        Emacs.Api.Native.Search
         Emacs.Api.Native.String
         Emacs.Command
         Emacs.Core
@@ -56,7 +61,6 @@ library
         Emacs.Internal.Check
         Emacs.Internal.Eq
         Emacs.Internal.Funcall
-        Emacs.Internal.FuncallN
         Emacs.Internal.Function
         Emacs.Internal.Integer
         Emacs.Internal.Intern
@@ -76,9 +80,8 @@ library
         Emacs.Type.Annotations
         Emacs.Type.CallableInstances
         Emacs.Type.FromEmacsValueInstances
-        Emacs.Type.ToEmacsFunctionInstances
+        Emacs.Type.ToEmacsConsInstances
         Emacs.Type.ToEmacsKeywordInstances
-        Emacs.Type.ToEmacsListInstances
         Emacs.Type.ToEmacsSymbolInstances
         Emacs.Type.ToEmacsValueInstances
         Emacs.Validation

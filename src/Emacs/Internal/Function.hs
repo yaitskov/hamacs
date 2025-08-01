@@ -181,6 +181,60 @@ funcall3 fname ev0 ev1 ev2 =
   join $ funcall <$> intern fname
                  <*> sequence [toEv ev0, toEv ev1, toEv ev2]
 
+funcall4
+  :: (MonadEmacs m, ToEmacsValue a, ToEmacsValue b, ToEmacsValue c, ToEmacsValue d)
+  => Text
+  -> a
+  -> b
+  -> c
+  -> d
+  -> m EmacsValue
+funcall4 fname ev0 ev1 ev2 ev3 =
+  join $ funcall <$> intern fname
+                 <*> sequence [toEv ev0, toEv ev1, toEv ev2, toEv ev3]
+
+funcall5
+  :: (MonadEmacs m, ToEmacsValue a, ToEmacsValue b, ToEmacsValue c, ToEmacsValue d, ToEmacsValue e)
+  => Text
+  -> a
+  -> b
+  -> c
+  -> d
+  -> e
+  -> m EmacsValue
+funcall5 fname ev0 ev1 ev2 ev3 ev4 =
+  join $ funcall <$> intern fname
+                 <*> sequence [toEv ev0, toEv ev1, toEv ev2, toEv ev3, toEv ev4]
+
+funcall6
+  :: (MonadEmacs m, ToEmacsValue a, ToEmacsValue b, ToEmacsValue c, ToEmacsValue d, ToEmacsValue e, ToEmacsValue f)
+  => Text
+  -> a
+  -> b
+  -> c
+  -> d
+  -> e
+  -> f
+  -> m EmacsValue
+funcall6 fname ev0 ev1 ev2 ev3 ev4 ev5 =
+  join $ funcall <$> intern fname
+                 <*> sequence [toEv ev0, toEv ev1, toEv ev2, toEv ev3, toEv ev4, toEv ev5]
+
+funcall7
+  :: (MonadEmacs m, ToEmacsValue a, ToEmacsValue b, ToEmacsValue c, ToEmacsValue d, ToEmacsValue e, ToEmacsValue f, ToEmacsValue g)
+  => Text
+  -> a
+  -> b
+  -> c
+  -> d
+  -> e
+  -> f
+  -> g
+  -> m EmacsValue
+funcall7 fname ev0 ev1 ev2 ev3 ev4 ev5 ev6 =
+  join $ funcall <$> intern fname
+                 <*> sequence [toEv ev0, toEv ev1, toEv ev2, toEv ev3, toEv ev4, toEv ev5, toEv ev6]
+
 mkCons
   :: (MonadEmacs m, ToEmacsValue a, ToEmacsValue b)
   => a

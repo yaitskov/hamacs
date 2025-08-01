@@ -5,16 +5,23 @@ import Emacs.Internal.Funcall ( funcall )
 import Emacs.Internal.Intern ( intern )
 import Emacs.Prelude
 import Emacs.Type
-    ( HasEmacsCtx(..),
-      EmacsValue(..),
-      EmacsSymbol(EmacsSymbol),
-      EmacsEnv(..) )
 import Foreign.C.Types ( CInt(..) )
 
 foreign import ccall _is_not_nil
   :: EmacsEnv
   -> EmacsValue
   -> IO CInt
+
+data Nil = Nil deriving (Show, Eq)
+
+instance ToEmacsValue Nil where
+  toEv !_ = mkNil
+
+instance FromEmacsValue Nil where
+  fromEv p =
+    isNil p >>= \case
+      True -> pure Nil
+      False -> fail $ "expected nil but " <> show p
 
 isNotNil :: (MonadIO m, HasEmacsCtx m) => EmacsValue -> m Bool
 isNotNil ev = do

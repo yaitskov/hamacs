@@ -1,5 +1,6 @@
 module Emacs.Internal (
     module Emacs.Type,
+    module X,
     nonLocalExitThrow,
     mkGlobalRef,
     getEmacsEnvFromRT,
@@ -14,17 +15,15 @@ module Emacs.Internal (
     isNotNil,
     isNil,
     -- mk
-    mkFunction,
     mkInteger,
     mkString,
     intern,
     intern',
-    mkList,
+    T(T), Nil(Nil),
     mkNil,
     mkT,
     --
     funcall,
-    errorHandle,
     checkExitStatus
     ) where
 
@@ -33,19 +32,17 @@ import Emacs.Type
 import Emacs.Type.CallableInstances ()
 import Emacs.Type.FromEmacsValueInstances ()
 import Emacs.Type.ToEmacsKeywordInstances ()
-import Emacs.Type.ToEmacsListInstances ()
 import Emacs.Type.ToEmacsSymbolInstances ()
 import Emacs.Type.ToEmacsValueInstances ()
 import Emacs.Internal.Eq ( eq )
 import Emacs.Internal.Check ( checkExitStatus, nonLocalExitThrow )
 import Emacs.Internal.Intern ( intern, intern' )
 import Emacs.Internal.Funcall ( funcall )
-import Emacs.Internal.Function ( mkFunction, errorHandle, mkList )
+import Emacs.Internal.Function as X hiding (_make_function)
 import Emacs.Internal.String ( mkString, extractString )
 import Emacs.Internal.Integer ( mkInteger, extractInteger )
---import Emacs.Internal.List ( mkList )
-import Emacs.Internal.Nil ( mkNil, isNotNil, isNil )
-import Emacs.Internal.T ( mkT )
+import Emacs.Internal.Nil ( mkNil, isNotNil, isNil, Nil(Nil) )
+import Emacs.Internal.T ( mkT, T(T) )
 import Emacs.Internal.TypeOf ( typeOf, isTypeOf )
 import GHC.Ptr ( Ptr )
 

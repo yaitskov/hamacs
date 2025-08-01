@@ -6,8 +6,7 @@ import Emacs.Type
 import Emacs.Type.ToEmacsValueInstances ()
 import Emacs.Type.CallableInstances ()
 import Emacs.Type.ToEmacsSymbolInstances ()
-import Emacs.Type.ToEmacsFunctionInstances ()
-import Emacs.Internal.Function -- allN ( funcall1, funcall2, funcall3 )
+import Emacs.Internal.Function ( funcall1, funcall2, funcall3 )
 import Emacs.Internal.Nil ( isNotNil )
 import Emacs.Internal.String ( extractString )
 

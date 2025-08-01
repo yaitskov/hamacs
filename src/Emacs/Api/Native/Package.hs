@@ -8,7 +8,6 @@ import Emacs.Type
       EmacsSymbol(EmacsSymbol),
       MonadEmacs )
 import Emacs.Type.FromEmacsValueInstances ()
-import Emacs.Type.ToEmacsListInstances ()
 import Emacs.Type.ToEmacsSymbolInstances ()
 import Emacs.Prelude ( ($), (=<<), void, Text )
 import Emacs.Internal.Function ( funcall1 )
