@@ -230,6 +230,5 @@ instance ToEmacsValue x => ToEmacsList [x] where
 
 instance MonadEmacs NativeEmacsM where
   callOverEmacs (EmacsSymbol s) actions = do
-    pas <- mkFunctionFromCallable actions
-    putStrLn $ "zzzzzzzzzzz " <> show pas
-    fromEv =<< funcall1 "eval" (s : [pas])
+    pas <- mapM (toEv . (:[]) <=< mkFunctionFromCallable) actions
+    fromEv =<< funcall1 "eval" (s : pas)

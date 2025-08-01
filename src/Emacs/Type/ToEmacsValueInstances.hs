@@ -37,7 +37,7 @@ instance ToEmacsValue Bool where
 
 -- Nil
 instance ToEmacsValue () where
-  toEv _ = mkNil
+  toEv _ = mkT
 
 -- List
 instance ToEmacsValue EmacsList where

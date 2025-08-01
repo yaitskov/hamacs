@@ -127,13 +127,13 @@ defunHint name f = do
   setFunction sn =<< mkHintFunctionFromCallable f
 
 instance MonadEmacs EmacsM where
-  callOverEmacs (EmacsSymbol s) a = do
+  callOverEmacs (EmacsSymbol s) actions = do
     q <- asks (.hintQueue)
-    pa <- mkHintFunctionFromCallable a
+    pa <- mapM (toEv . (:[]) <=< mkHintFunctionFromCallable) actions
     tid <- forkIO do
       -- eval would cause another call from Emacs
       catchAny
-        (do r <- funcall1 "eval" =<< sequence [pure s, toEv [pa]]
+        (do r <- funcall1 "eval" (s : pa)
             atomically . writeTQueue q $ Return r
         )
         (\se -> atomically . writeTQueue q $ ReThrow se)

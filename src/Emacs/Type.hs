@@ -128,7 +128,7 @@ instance HasEmacsCtx NativeEmacsM where
   getEmacsCtx = ask
 
 class (HasEmacsCtx m, MonadFail m, MonadUnliftIO m) => MonadEmacs m where
-  callOverEmacs :: (FromEmacsValue a, ToEmacsValue a) => EmacsSymbol -> m a -> m a
+  callOverEmacs :: (FromEmacsValue a, ToEmacsValue a) => EmacsSymbol -> [m a] -> m a
 
 class CallableArity a where
     arity :: a -> Int

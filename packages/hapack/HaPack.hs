@@ -27,4 +27,7 @@ iAmEmacsCompatibleFun txt = void $ message txt
 ($$$$) = (+)
 
 sayHelloFromSaveExcursion :: EmacsM ()
-sayHelloFromSaveExcursion = saveExcursion sayHello
+sayHelloFromSaveExcursion = saveExcursion [sayHello]
+
+fooBar0FromSaveExcursion :: EmacsM Int
+fooBar0FromSaveExcursion = saveExcursion [pure fooBar0]

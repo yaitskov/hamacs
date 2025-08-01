@@ -6,10 +6,11 @@
 (require 'hamacs)
 (message "After mymodule is required")
 (hamacs-load-package "hapack")
-(hapack-sayHello)
+(cl-assert (hapack-sayHello) t)
 (hapack-iAmEmacsCompatibleFun "wow")
 (message "Result: %d" (hapack-fooBar 22))
 (message "Result: %d" (hapack-third_function 11 1000))
 (hapack-sayHelloInEmacs "This message is emitted via Emacs message function")
-(hapack-sayHelloFromSaveExcursion)
+(cl-assert (eq t (hapack-sayHelloFromSaveExcursion)) t)
+(cl-assert (eq 3333 (hapack-fooBar0FromSaveExcursion)) t)
 ;;; run.el ends here
