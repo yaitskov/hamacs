@@ -5,7 +5,13 @@
 (message "Before mymodule is required")
 (require 'hamacs)
 (message "After mymodule is required")
-(hamacs-load-package "hapack")
+(let ((hint-params
+      (list "-no-user-package-db"
+            "-package-env" "-"
+            "-package-db" (concat (getenv "PWD") "/dist-newstyle/packagedb/ghc-9.12.2")
+          )))
+  (hamacs-load-package hint-params "hapack"))
+
 (cl-assert (hapack-sayHello) t)
 (hapack-iAmEmacsCompatibleFun "wow")
 (message "Result: %d" (hapack-fooBar 22))

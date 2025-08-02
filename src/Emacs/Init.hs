@@ -42,37 +42,15 @@ findHamacsPackageCabal packNameTxt = do
 emacsModuleInit :: EmacsModule
 emacsModuleInit = defmodule "hamacs" $ do
   mapM_ (require <=< intern) ["subr-x", "package"]
-  -- defun "hamacs-test-save-excursion" seTest
-
   defun "hamacs-load-package" loadHamacsPackage
   where
-    -- seTest :: EmacsM ()
-    -- seTest = do
-    --   void $ message "Before Save"
-    --   -- se <- intern "save-excursion"
-    --   void $ saveExcursion (message "Inside Save")
-    --   void $ message "After Save"
-
-    -- pingPackage :: Text -> EmacsM ()
-    -- pingPackage pkgName = do
-    --   pm <- readMVar hamacsPackageQueues
-    --   case M.lookup pkgName pm of
-    --     Nothing -> throwIO . AssertionFailed $ "Hamacs package [" <> show pkgName <> "] is not found"
-    --     Just pkgQueue -> do
-    --       em <- newEmptyMVar
-    --       beforeCall <- liftIO (systemSeconds <$> getSystemTime)
-    --       atomically . writeTQueue pkgQueue $ SyncPing pkgName em
-    --       takeMVar em
-    --       afterRespond <- liftIO (systemSeconds <$> getSystemTime)
-    --       putTextLn $ "Duration: " <> show (afterRespond - beforeCall) <> " seconds"
-
-    loadHamacsPackage :: Text -> NativeEmacsM Text
-    loadHamacsPackage hmPgkName = do
+    loadHamacsPackage :: [Text] -> Text -> NativeEmacsM Text
+    loadHamacsPackage customHintArgs hmPgkName = do
       cabalFile <- findHamacsPackageCabal hmPgkName
       pkgQueue <- newTQueueIO
       responseMvar <- newEmptyMVar
       atomically . writeTQueue pkgQueue $ PutMVarOnReady responseMvar
-      tid <- forkIO $ runHintOn cabalFile pkgQueue
+      tid <- forkIO $ runHintOn customHintArgs cabalFile pkgQueue
 
       putStr $ "Pending Hamacs package " <> show hmPgkName <> " from tread " <> show tid <> " while loading is complete..."
       takeMVar responseMvar

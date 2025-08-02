@@ -34,8 +34,9 @@ isEmacsCompatibleFunction fName =
       putStrLn $ "Pass " <> fName <> " as " <> ok
       pure True
 
-runHintOn :: CabalFilePath -> TQueue HintReq -> NativeEmacsM ()
-runHintOn cabalFile q = catchAny go oops
+
+runHintOn :: [Text] -> CabalFilePath -> TQueue HintReq -> NativeEmacsM ()
+runHintOn customHintArgs cabalFile q = catchAny go oops
   where
     oops (SomeException se) = do
       putStrLn $ "\nLoading of " <> show cabalFile <> "failed due:\n"
@@ -43,11 +44,13 @@ runHintOn cabalFile q = catchAny go oops
       -- writeTQueue failure to unlock main thread
 
     hintArgTweaks =
-      [ "-no-user-package-db"
-      , "-package-env", "-"
-      , "-package-db", "/home/dan/pro/haskell/my/hamacs/dist-newstyle/packagedb/ghc-9.12.2"
-      ]
-
+      case customHintArgs of
+        [] ->
+          [ "-no-user-package-db"
+          , "-package-env", "-"
+          , "-package-db", "/home/dan/pro/haskell/my/hamacs/dist-newstyle/packagedb/ghc-9.12.2"
+          ]
+        o -> fmap toString o
     hintImports = [ "UnliftIO.STM", "Emacs.Type", "Emacs.Core", "Emacs.Hint.Type", "Emacs.Hint", "Relude" ]
     go :: NativeEmacsM ()
     go =
