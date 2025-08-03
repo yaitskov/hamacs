@@ -12,8 +12,7 @@ jobs:
         nix_path: nixpkgs=channel:nixos-unstable
     - run:
         nix-build --extra-experimental-features pipe-operators
-    - uses: cachix/cachix-action@v16
+    - uses: cachix/cachix-action@v15
       with:
-        name: yaitskov
+        name: o
         authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-        pathsToPush: result
