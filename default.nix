@@ -8,7 +8,7 @@ let
 
   inherit (np.haskell.lib) dontHaddock;
   inherit (np) lib;
-  inherit (lib) strings;
+  inherit (lib) strings pipe;
   inherit (strings) concatStringsSep;
 
   sourceRegexes = [ "^(LICENSE|run.el|(src|cbits|packages).*)$" "^.*\\.cabal$" ];
@@ -42,11 +42,12 @@ let
     });
 
   hamacs =
-      emacs-integration-test
-        (soShortCut
-          (linkExtraLibs
-            (dontHaddock
-              (hp.callCabal2nix "hamacs" (lib.sourceByRegex ./. sourceRegexes) { }))));
+    pipe (hp.callCabal2nix "hamacs" (lib.sourceByRegex ./. sourceRegexes) { })
+      [ emacs-integration-test
+        soShortCut
+        linkExtraLibs
+        dontHaddock
+      ];
 
   shell = hp.shellFor {
     packages = p: [ hamacs ];
