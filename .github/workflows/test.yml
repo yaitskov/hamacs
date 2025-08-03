@@ -5,16 +5,18 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    environment: CI
     steps:
     - uses: actions/checkout@v4.2.2
     - uses: cachix/install-nix-action@v31
       with:
         nix_path: nixpkgs=channel:nixos-unstable
     - run:
-        echo "leak $LEAK env $LEAK2"
+        echo "leak $LEAK env $LEAK2 sec $LEAK3"
       env:
         LEAK: "${{ vars.LEAK }}"
         LEAK2: "${{ env.LEAK }}"
+        LEAK3: "${{ secrets.CACHIX_AUTH_TOKEN }}"
     - run:
         exit 1
     - run:
