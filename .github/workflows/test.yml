@@ -14,9 +14,6 @@ jobs:
     - uses: cachix/cachix-action@v16
       with:
         name: hamacs
+        authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
     - run:
         nix-build --extra-experimental-features pipe-operators
-    - uses: cachix/cachix-action@v16
-      with:
-        name: hamacs
-        authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
