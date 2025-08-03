@@ -10,6 +10,8 @@ jobs:
     - uses: cachix/install-nix-action@v31
       with:
         nix_path: nixpkgs=channel:nixos-unstable
-    - run: set | grep CACHIX_AUTH | wc -l
-    - run: cachix use yaitskov
+    - uses: cachix/cachix-action@v16
+      with:
+        name: yaitskov
+        authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
     - run: nix-build --extra-experimental-features pipe-operators | cachix push yaitskov
