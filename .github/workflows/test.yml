@@ -11,17 +11,12 @@ jobs:
     - uses: cachix/install-nix-action@v31
       with:
         nix_path: nixpkgs=channel:nixos-unstable
-    - run:
-        echo "leak $LEAK env $LEAK2 sec $LEAK3"
-      env:
-        LEAK: "${{ vars.LEAK }}"
-        LEAK2: "${{ env.LEAK }}"
-        LEAK3: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-    - run:
-        exit 1
+    - uses: cachix/cachix-action@v16
+      with:
+        name: hamacs
     - run:
         nix-build --extra-experimental-features pipe-operators
-    - uses: cachix/cachix-action@v15
+    - uses: cachix/cachix-action@v16
       with:
-        name: o
+        name: hamacs
         authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
