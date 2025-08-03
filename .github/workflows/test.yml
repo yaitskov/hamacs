@@ -14,6 +14,8 @@ jobs:
       with:
         name: yaitskov
         authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-    - run: nix-build --extra-experimental-features pipe-operators | cachix push yaitskov
+    - run: |
+        cachix use yaitskov
+        nix-build --extra-experimental-features pipe-operators | cachix push yaitskov
       env:
         CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
