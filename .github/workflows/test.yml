@@ -19,6 +19,10 @@ jobs:
       env:
         CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
     - run:
-        nix-build --extra-experimental-features pipe-operators | cachix push yaitskov
+        nix-build --extra-experimental-features pipe-operators
+      env:
+        CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+    - run:
+        cachix push yaitskov ./result
       env:
         CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
