@@ -11,9 +11,7 @@ jobs:
       with:
         nix_path: nixpkgs=channel:nixos-unstable
     - run:
-        sha1sum <<< $CACHIX_AUTH_TOKEN
-      env:
-        CACHIX_AUTH_TOKEN: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+        echo leak $LEAK
     - run:
         exit 1
     - run:
