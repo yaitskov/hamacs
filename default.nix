@@ -44,12 +44,8 @@ let
     });
 
   hamacs =
-    pipe (hp.callCabal2nix "hamacs" (lib.sourceByRegex ./. sourceRegexes) { })
-      [ emacs-integration-test
-        soShortCut
-        linkExtraLibs
-        dontHaddock
-      ];
+    (hp.callCabal2nix "hamacs" (lib.sourceByRegex ./. sourceRegexes) { })
+      |> emacs-integration-test |> soShortCut |> linkExtraLibs |> dontHaddock ;
 
   shell = hp.shellFor {
     packages = p: [ hamacs ];
