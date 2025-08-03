@@ -6,10 +6,11 @@
 (require 'hamacs)
 (message "After mymodule is required")
 (let ((hint-params
-      (list "-no-user-package-db"
-            "-package-env" "-"
-            "-package-db" (concat (getenv "PWD") "/dist-newstyle/packagedb/ghc-9.12.2")
-          )))
+       (list "-no-user-package-db"
+             "-package-env" "-"
+             "-package-db" (getenv "NIX_GHC_LIBDIR")
+             "-package-db" (file-name-concat (getenv "PWD") "dist/package.conf.inplace")
+       )))
   (hamacs-load-package hint-params "hapack"))
 
 (cl-assert (hapack-sayHello) t)

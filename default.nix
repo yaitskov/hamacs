@@ -1,64 +1,68 @@
 { system ? builtins.currentSystem or "x86_64-linux"
+, sources ? import ./nix/sources.nix
 , ghc ? "ghc9122"
 }:
-
 let
-  nix = import ./nix;
-  pkgs = nix.pkgSetForSystem system {
-    config = {
-      allowBroken = true;
-      allowUnfree = true;
-    };
-  };
-  inherit (pkgs.haskell.lib) dontHaddock;
-  inherit (pkgs) lib;
-  hsPkgSetOverlay = pkgs.callPackage ./nix/haskell/overlay.nix {
-    inherit (nix) sources;
-  };
+  np = import sources.nixpkgs { overlays = []; config = {}; };
+  hp = np.haskell.packages.${ghc};
 
-  sources = [
-    "^src.*$"
-    "^LICENSE$"
-    "^cbits.*$"
-    "configure$"
-    "^.*\\.cabal$"
+  inherit (np.haskell.lib) dontHaddock;
+  inherit (np) lib;
+  inherit (lib) strings;
+  inherit (strings) concatStringsSep;
+
+  sourceRegexes = [ "^(LICENSE|run.el|(src|cbits|packages).*)$" "^.*\\.cabal$" ];
+  # extraLibs is required because cabal2Nix does not support Custom build type
+  # where these deps can be specified
+  extraLibs = [
+    "--extra-lib-dirs=${hp.ghc}/lib/ghc-9.12.2/lib/x86_64-linux-ghc-9.12.2-ae43"
+    "--ghc-option=-optl=-lHSrts-1.0.2_thr-ghc9.12.2"
   ];
+  linkExtraLibs = drv:
+    drv.overrideAttrs(oa: {
+      dontPatchELF = true; # strips rts library when false
+      configureFlags = (oa.configureFlags or []) ++ extraLibs;
+    });
+  soShortCut = drv:
+    drv.overrideAttrs(oa: {
+      installPhase =
+        (oa.installPhase or "") + ''
+        ln -s $out/lib/ghc-9.12.2/lib/x86_64-linux-ghc-9.12.2*/*hamacs*.so $out/lib/hamacs.so
+        '';
+    });
+  emacs-integration-test = drv:
+    drv.overrideAttrs (oa: {
+      buildInputs = (oa.builtInputs or []) ++ [np.emacs np.tree];
+      checkPhase = (oa.checkPhase or "") + ''
+        echo Emacs Integration Tests
+        export NIX_GHC_LIBDIR=${(hp.ghcWithPackages (h: hamacs.getCabalDeps.libraryHaskellDepends))}/lib/ghc-9.12.2/lib
+        ln -s dist/build/libHShamacs*.so hamacs.so
+        emacs -Q -L . --batch -l run.el
+      '';
+    });
 
-  base = dontHaddock (hsPkgs.callCabal2nix "hamacs" (lib.sourceByRegex ./. sources) { });
-  hamacs-overlay = _hf: _hp: { hamacs = base; };
-  baseHaskellPkgs = pkgs.haskell.packages.${ghc};
-  hsOverlays = [ hsPkgSetOverlay hamacs-overlay ];
-  hsPkgs = baseHaskellPkgs.override (old: {
-    overrides =
-      builtins.foldl' pkgs.lib.composeExtensions (old.overrides or (_: _: { }))
-      hsOverlays;
-  });
+  hamacs =
+      emacs-integration-test
+        (soShortCut
+          (linkExtraLibs
+            (dontHaddock
+              (hp.callCabal2nix "hamacs" (lib.sourceByRegex ./. sourceRegexes) { }))));
 
-  hls = pkgs.haskell.lib.overrideCabal hsPkgs.haskell-language-server
-    (_: { enableSharedExecutables = true; });
-
-  shell = hsPkgs.shellFor {
-    packages = p: [ p.hamacs ];
-    nativeBuildInputs = (with pkgs; [
+  shell = hp.shellFor {
+    packages = p: [ hamacs ];
+    nativeBuildInputs = (with np; [
       cabal-install
       ghcid
       hlint
       niv
       emacs
-    ]) ++ [ hls ];
+    ]) ++ [ hp.haskell-language-server ];
     shellHook = ''
       export PS1='$ '
-      # extract path to emacs-module.h from prefix
-      # emacs --batch  --no-init-file  --eval '(message "%s" system-configuration-options)'
       echo $(dirname $(dirname $(which ghc)))/share/doc > .haddock-ref
     '';
   };
-
-  hamacs = hsPkgs.hamacs;
 in {
-  inherit hsPkgs;
-  inherit ghc;
-  inherit pkgs;
   inherit shell;
   inherit hamacs;
 }

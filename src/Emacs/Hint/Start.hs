@@ -59,7 +59,7 @@ runHintOn customHintArgs cabalFile q = catchAny go oops
         Right hp -> do
           emcEnv <- ask
           let packName = toText $ unPackageName hp.packageName
-          putStrLn $ "HINT ARGS " <> show (hamacsPackageToHintArgs cabalFile hp) <> "\n" <>  show (modulesExportedToHint hp)
+          putStrLn $ "HINT ARGS " <> show (hintArgTweaks <> hamacsPackageToHintArgs cabalFile hp) <> "\n" <>  show (modulesExportedToHint hp)
           HI.unsafeRunInterpreterWithArgs
             (hintArgTweaks <> hamacsPackageToHintArgs cabalFile hp)
             (do
