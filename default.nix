@@ -55,6 +55,7 @@ let
       hlint
       niv
       emacs
+      cachix
     ]) ++ [ hp.haskell-language-server ];
     shellHook = ''
       export PS1='$ '
