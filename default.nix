@@ -60,6 +60,16 @@ let
     shellHook = ''
       export PS1='$ '
       echo $(dirname $(dirname $(which ghc)))/share/doc > .haddock-ref
+
+      function cabal() {
+        case "$1" in
+          build)
+            shift
+            ${np.cabal-install}/bin/cabal build ${concatStringsSep " " extraLibs} "$@" ;;
+          *) ${np.cabal-install}/bin/cabal "$@" ;;
+        esac
+      }
+      export -f cabal
     '';
   };
 in {
