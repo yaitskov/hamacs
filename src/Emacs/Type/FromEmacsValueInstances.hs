@@ -1,11 +1,14 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Emacs.Type.FromEmacsValueInstances where
 
-import Emacs.Prelude
-import Emacs.Type
-import Emacs.Internal.Integer
-import Emacs.Internal.String
+import Emacs.Internal.Integer ( extractInteger )
+import Emacs.Internal.Nil ( isNotNil )
+import Emacs.Internal.String ( extractString )
+import Emacs.Prelude ( Applicative(pure), Int, Text, Bool, void, (.) )
+import Emacs.Type ( FromEmacsValue(..), EmacsValue, EmacsFunction(..) )
 
+instance FromEmacsValue Bool where
+  fromEv = isNotNil
 
 instance FromEmacsValue Int where
   fromEv = extractInteger

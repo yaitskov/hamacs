@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Emacs.Type.ToEmacsSymbolInstances where
 
-import Emacs.Internal.Intern
-import Emacs.Prelude
+import Emacs.Internal.Intern ( intern )
+import Emacs.Prelude ( Applicative(pure), (<$>) )
 import Emacs.Type
 import Emacs.Type.ToEmacsValueInstances ()
 

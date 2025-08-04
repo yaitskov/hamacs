@@ -47,6 +47,7 @@ library
         Emacs.Api.Lisp.Subr
         Emacs.Api.Lisp.Replace
         Emacs.Api.Native.Buffer
+        Emacs.Api.Native.Eval
         Emacs.Api.Native.Package
         Emacs.Api.Native.Search
         Emacs.Api.Native.String
@@ -64,7 +65,6 @@ library
         Emacs.Internal.Function
         Emacs.Internal.Integer
         Emacs.Internal.Intern
-        Emacs.Internal.List
         Emacs.Internal.Nil
         Emacs.Internal.String
         Emacs.Internal.T
