@@ -36,12 +36,22 @@ fooBar0FromSaveExcursion = saveExcursion (pure fooBar0)
 runHamacsApiTests :: EmacsM ()
 runHamacsApiTests = withRunInIO $ \run -> defaultMain (tests run)
   where
+    retOK = pure ("OK" :: Text)
     testCommandP run e fun =
       testCase (fun <> " is " <> show e) $
             (e  @=?) =<< run (commandp =<< intern (toText fun))
-    tests run = testGroup "Hamacs API"
+
+    tests (run :: (forall a. EmacsM a -> IO a)) = testGroup "Hamacs API"
       [ testGroup "commandp"
         [ testCommandP run True "set-mark-command"
         , testCommandP run False "message"
+        ]
+      , testGroup "save-excursion"
+        [ testCase "ret OK from HS" $ ("OK" @=?) =<< run (saveExcursion retOK)
+        , testCase "ret int from point" $ (1 @=?) =<< run (saveExcursion point)
+        , testCase "recursive HS" $ ("OK" @=?) =<< run (saveExcursion (saveExcursion retOK))
+        , testCase "recursive 3 HS" $ ("OK" @=?) =<< run (saveExcursion
+                                                          (saveExcursion
+                                                           (saveExcursion retOK)))
         ]
       ]
