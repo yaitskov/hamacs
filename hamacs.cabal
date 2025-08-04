@@ -7,7 +7,7 @@ license-file: LICENSE
 copyright: 2025 Daniil Iaitskov
 maintainer: dyaitskov@gmail.com
 homepage: http://github.com/yaitskov/hamacs
-synopsis: Haskell as Emacs embedded scripting launguage
+synopsis: Haskell as an Emacs embedded scripting launguage
 description:
     Hamacs is not first project trying to marry Haskell with Emacs.
     Previous attempts assumed Hasell modules compilation into a shared libary.
@@ -16,7 +16,8 @@ description:
     I wrote a few Emacs modules in its Lisp dialect (color-mode, bullet-proof-general, niv-mode),
     and besides filibaster of review process,  I had terrible experience while debugging Lisp code.
     Based on haskelisp project of Takenari Shinohara.
-category: Editor, Emacs
+
+category: Editor, Emacs, Hamacs
 author: Daniil Iaitskov
 
 extra-tmp-files:     eval.buildinfo
