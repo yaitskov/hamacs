@@ -14,6 +14,7 @@ fooBar0 = 3333
 sayHelloInEmacs :: Text -> EmacsM ()
 sayHelloInEmacs msg = void $ funcall2 "message" ("Interpolate here: %s" :: Text) msg
 
+{-# ANN sayHello Interactive #-}
 sayHello :: EmacsM ()
 sayHello = putStrLn "Hello from HINT"
 

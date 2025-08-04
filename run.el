@@ -25,4 +25,6 @@
 (hapack-sayHelloInEmacs "This message is emitted via Emacs message function")
 (cl-assert (eq t (hapack-sayHelloFromSaveExcursion)) t)
 (cl-assert (eq 3333 (hapack-fooBar0FromSaveExcursion)) t)
+(cl-assert (null (commandp 'hapack-fooBar)))
+(cl-assert (commandp 'hapack-sayHello))
 ;;; run.el ends here
