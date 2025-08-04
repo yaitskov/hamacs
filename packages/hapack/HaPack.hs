@@ -1,6 +1,7 @@
 module HaPack where
 
 import Emacs --  (mkFunctionFromCallable, message, funcall2)
+import Emacs.Test
 import Relude
 import Test.Tasty as TT
 import Test.Tasty.HUnit
@@ -34,7 +35,7 @@ fooBar0FromSaveExcursion :: EmacsM Int
 fooBar0FromSaveExcursion = saveExcursion (pure fooBar0)
 
 runHamacsApiTests :: EmacsM ()
-runHamacsApiTests = withRunInIO $ \run -> defaultMain (tests run)
+runHamacsApiTests = withRunInIO $ \run -> runTestsWithoutExit (tests run)
   where
     retOK = pure ("OK" :: Text)
     testCommandP run e fun =

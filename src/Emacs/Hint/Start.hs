@@ -10,7 +10,7 @@ import Emacs.Type
 import Emacs.Package.Cabal
 import Emacs.Internal ()
 import Emacs.Prelude
-import Emacs.Text
+import Emacs.Text ( trimX )
 import Language.Haskell.Interpreter (ModuleName, MonadInterpreter, ModuleElem (Fun), Id)
 import Language.Haskell.Interpreter qualified as HI
 import Language.Haskell.Interpreter.Unsafe qualified as HI

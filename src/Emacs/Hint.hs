@@ -12,7 +12,7 @@ module Emacs.Hint where
 import Data.Text.Foreign qualified as TF
 import Emacs.Core
 import Emacs.Function ( setFunction )
-import Emacs.Hint.Type
+import Emacs.Hint.Type ( EmacsHintM, HintFunctionStub )
 import Emacs.Prelude
 import Foreign.C.String ( CString )
 import Foreign.C.Types ( CPtrdiff(..) )
