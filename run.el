@@ -2,9 +2,7 @@
 ;;; Commentary:
 ;;; Code:
 (add-to-list 'load-path "packages")
-(message "Before mymodule is required")
 (require 'hamacs)
-(message "After mymodule is required")
 (let ((hint-params
        (append
         (list "-no-user-package-db"
