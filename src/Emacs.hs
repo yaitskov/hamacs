@@ -12,3 +12,4 @@ import Emacs.Api.Native.Eval as X
 import Emacs.Api.Native.Package as X
 import Emacs.Api.Native.Search as X
 import Emacs.Api.Native.String as X
+import UnliftIO as X

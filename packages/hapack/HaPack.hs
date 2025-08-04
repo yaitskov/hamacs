@@ -1,9 +1,9 @@
 module HaPack where
 
-
--- import Emacs.Core
 import Emacs --  (mkFunctionFromCallable, message, funcall2)
 import Relude
+import Test.Tasty as TT
+import Test.Tasty.HUnit
 
 fooBar :: Int -> Int
 fooBar n = n + 33
@@ -32,3 +32,16 @@ sayHelloFromSaveExcursion = saveExcursion sayHello
 
 fooBar0FromSaveExcursion :: EmacsM Int
 fooBar0FromSaveExcursion = saveExcursion (pure fooBar0)
+
+runHamacsApiTests :: EmacsM ()
+runHamacsApiTests = withRunInIO $ \run -> defaultMain (tests run)
+  where
+    testCommandP run e fun =
+      testCase (fun <> " is " <> show e) $
+            (e  @=?) =<< run (commandp =<< intern (toText fun))
+    tests run = testGroup "Hamacs API"
+      [ testGroup "commandp"
+        [ testCommandP run True "set-mark-command"
+        , testCommandP run False "message"
+        ]
+      ]

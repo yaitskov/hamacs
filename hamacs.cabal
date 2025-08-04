@@ -110,6 +110,12 @@ library
       , unliftio-core
       , wl-pprint-text < 2
       , yaml < 1
+      -- testing
+      , QuickCheck
+      , tasty
+      , tasty-hunit
+      , tasty-quickcheck
+
     c-sources:
         cbits/stab.c
     default-language: GHC2024
