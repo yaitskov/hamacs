@@ -1,114 +1,216 @@
-EXPERIMENTAL
+![](https://github.com/github/docs/actions/workflows/test.yml/badge.svg)
 
-Write Emacs module in Haskell, using Emacs 25's Dynamic Module feature.
+[![Licence](https://img.shields.io/github/license/Ileriayo/markdown-badges?style=for-the-badge)](./LICENSE)
+![Haskell](https://img.shields.io/badge/Haskell-5e5086?style=for-the-badge&logo=haskell&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white)
+![Nix](https://img.shields.io/badge/NIX-5277C3.svg?style=for-the-badge&logo=NixOS&logoColor=white)
 
-* Only tested with linux.
-* Only tested with Stack (LTS 6.26)
-* You need to build emacs with --with-modules configuration options
-* You need to specify some ghc-options to make it work
+[![](https://raw.githubusercontent.com/dch82/Nixpkgs-Badges/main/nixpkgs-badge-light.svg)](https://search.nixos.org/packages?size=1&show={{PACKAGENAME}})
 
-Sample:
 
-    {-# LANGUAGE ForeignFunctionInterface,OverloadedStrings #-}
-    module Main where
+# Hamacs
 
-    import Emacs
-    import Foreign.C.Types
+Hamacs - Haskell as a second language for Emacs.
 
-    foreign export ccall "emacs_module_init" emacsModuleInit :: EmacsModule
+## Motivation
 
-    emacsModuleInit :: EmacsModule
-    emacsModuleInit = defmodule "sample-module" $ do
+This is not the first attempt of Emacs invasion with Haskell.  Hamacs
+project takes root from
+[haskelisp](https://hackage.haskell.org/package/haskelisp).
+[Emacs-module](https://hackage.haskell.org/package/emacs-module) is
+another one. Both packages looks similar, but `emacs-module` has more
+elaborate types and well maintained, but I was not able to find any
+project using them.
 
-      setVal "foo" (Symbol "bar")
+`Emacs-module` readme decisively explains drawbacks of sticking to
+Lisp these days, but why it is not popular?
 
-      defun "square" $ \i -> do
-        message "haskell squre function called"
-        return $ (i*i :: Int)
+I think these solutions haven't got traction because:
 
-    main :: IO ()
-    main = undefined
+* compilation requirement -
+  [elisp](https://www.gnu.org/software/emacs/manual/html_node/eintr/)
+  is an interpretable language. It is an advantage in an embedded
+  environment, which makes the development cycle shorter and promotes
+  quick prototyping. Plus building Haskell programs is pretty far from
+  perfection.
 
-# How to use
+* concerned open sourceness - this follows straight from the above
+  bullet - building package from source is labor intensive and an
+  typical user will be inclined to download opaque binary files, which
+  automatically raise a safety issue, nonetheless software is
+  distributed under GPL license.
 
-Explain using Stack and LTS 6.26 as premise.
+* lack of app store - such tool has little value without packages
+  providing practical usefulness to end user, who is an ultimate
+  driver, because he wants features and discovers bugs and the process
+  triggers develoment in all subsequent layers down to OS kernel. So
+  without a few killer apps such tool would never get a place in the
+  Sun.
 
-## 1. Create a new project with Stack
 
-    $ stack --resolver=lts-6.26 new mymodule
+Integration with Haskell faces lots of technical issues in comparison
+with Python and Lua, but these mainstream scripting languages has
+fundamental issue - they are as dynamically typed as Lisp. So this fact
+undermines the whole idea for integration with them.
 
-## 2. Change executable name to *.so and add haskelisp to the dependency
+After all cold and logical inference, as daily Emacs user, I just want
+to enjoy developing extensions (from an idea to installation step) and
+as for now it is a terriable experience. I implemented a few Emacs
+packages (rectangular-indent, color-mode, bullet-proof-general, and
+niv-mode) and besides tedious debugging I found that publishing
+packages to Melpa is way harder than to
+[Hackage](https://hackage.haskell.org) due less inclusive polices. As
+result I was not able to publish anything there.
 
-mymodule.cabal:
+## Installation
 
-    executable mymodule.so
-      hs-source-dirs:      app
-      main-is:             Main.hs
-      ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-      build-depends:       base
-                         , mymodule
-                         , haskelisp
-      default-language:    Haskell2010
+Installation process is handled with dedicated package
+[boot-hamacs](https://github.com/yaitskov/boot-hamacs). It is a Lisp
+package installing [nix](https://nix.dev/) under the hood.
 
-## 3. Change `ghc-options` and add `cc-options` to make shared library
+Once it is over the portal to honderland is open.
 
-mymodule.cabal:
+## Overview
 
-    executable mymodule.so
-      ...
-      cc-options:          -fPIC
-      ghc-options:         -shared -dynamic -fPIC -lHSrts-ghc7.10.3
-      ...
+An Emacs extention built on top of Hamacs project is a
+[Cabal](https://www.haskell.org/cabal/) package and it can be built
+via `cabal build`. This way Hamacs extensions can be distributed via
+Hackage repository. Though Hamacs has its own package loader dealing
+wit Cabal file immediately. Info extracted from a Cabal file is fed to
+Haskell interpreter [hint](https://hackage.haskell.org/package/hint).
 
-## 4. Modules must be GPL compatible
+Hamacs allows to expose Haskell to Emacs with doc strings with option to mark
+them as interactive, access Emacs API from Haskell and interleave them
+in cases as with `save-excursion`.
 
-The shared library must include `plugin_is_GPL_compatible` symbol to be loaded by Emacs.
-Prepare a C source file and specify it with `c-sources` option.
+Haskell functions defined in Cabal exposed modules are exported by
+default.  Names are prefixed with package name. Function names can be
+adopted to Emacs naming convention.
 
-    $ echo 'int plugin_is_GPL_compatible;' > plugin_is_GPL_compatible.c
+## Hello world
 
-mymodule.cabal:
+Simplest hamacs package require Cabal file and Haskell source one.
+Let's consider `rectangular-indet` as first hamacs package adoptation.
 
-    executable mymodule.so
-      ...
-      c-sources:           plugin_is_GPL_compatible.c
-      ...
+### Original version in Emacs Lisp
 
-## 5. Write some code
+``` emacs-lisp
+(defun mulstring (str n)
+  "Multiplay string N times."
+  (if (> n 0)
+      (concat str
+	      (mulstring str (- n 1)))
+    ""))
 
-Main.hs:
+(defun myshift ()
+  "Shift region.
+by number of columns between cursor column and column
+with first non space char of the line with the cursor."
+  (interactive)
+  (let (a
+        (mx (max (point) (mark)))
+	(mn (min (point) (mark)))
+        )
+    (save-excursion
+      (goto-char mn)
+      (beginning-of-line)
+      (setq a (- (re-search-forward "[^ ]")
+		 mn 1))
+      (beginning-of-line)
+      (if (> a 0)
+	  (replace-regexp (concat "^"
+				  (mulstring " " a))
+			  ""
+			  nil
+			  (point)
+			  mx)
+	(replace-regexp "^"
+			(mulstring " " (- a))
+			nil
+			(point)
+			mx)))
+    (goto-char mn)))
+```
 
-    {-# LANGUAGE ForeignFunctionInterface,OverloadedStrings #-}
-    module Main where
+### Hamacs equivalent
 
-    import Emacs
-    import Foreign.C.Types
+Both files are located in the folder named after the package.
 
-    foreign export ccall "emacs_module_init" emacsModuleInit :: EmacsModule
+#### rectangular-indet.cabal
+```cabal
+cabal-version: 3.8
+name: rectangular-indet
+version: 0.0.1
+license: GPL-3.0-only
+library
+  exposed-modules: Lib
+  build-depends: base, hamacs
+  hs-source-dirs: .
+```
 
-    emacsModuleInit :: EmacsModule
-    emacsModuleInit = defmodule "mymodule" $ do
+#### Lib.hs
 
-      defun "mysquare" $ \i -> do
-        message "haskell squre function called"
-        return $ (i*i :: Int)
+``` haskell
+module Lib where
 
-    main :: IO ()
-    main = undefined
+import Control.Lens
+import Data.Generics.Labels as X ()
+import Data.MinMax1 (minmaxP)
+import Data.Text qualified as T
+import Emacs
+import Relude
 
-We don't need `main` function, but without it cause a compile error,
-so include a dummy one. It won't be called.
+{-# ANN exe (DocString """Shift region by number of columns between
+                          cursor column and column with first non space char
+                          of the line with the cursor.""") #-}
+{-# ANN exe Interactive #-}
+exe :: EmacsM ()
+exe = do
+  (mn, mx) <- minmaxP <$> point <*> mark
+  saveExcursion do
+    void $ gotoChar mn
+    void $ beginningOfLine
+    a <- (\x -> x - mn  - 1) <$> reSearchForward "[^ ]"
+    void $ beginningOfLine
+    cp <- point
+    let customize o = o & #start ?~ cp & #end ?~ mx
+    if a > 0
+      then replaceRegexp
+           (EmacsRegexp $ "^" <> T.replicate (unBufPos a) " ")
+           ""
+           customize
+      else replaceRegexp "^"
+           (T.replicate (unBufPos (-a)) " ")
+           customize
+    void $ gotoChar mn
+```
 
-## 6. Build
+### Loading hamacs package
 
-    $ stack build
+``` emacs-lisp
+(add-to-list 'load-path "hamacs-packages")
+(require 'hamacs)
+(hamacs-load-package "rectangular-shift"))
 
-## 7. Copy the genereated shared library under `load-path`
+;; Tests:
+(with-temp-buffer
+  (insert "hello")
+  (push-mark)
+  (rectangular-shift-exe)
+  (cl-assert (equal (buffer-string) "     hello") t "increase indent of single line"))
 
-For example, if `~/.emacs.d/lisp` is included in `load-path`:
+(with-temp-buffer
+  (insert "hello")
+  (beginning-of-line)
+  (push-mark)
+  (insert "     ")
+  (rectangular-shift-exe)
+  (cl-assert (equal (buffer-string) "hello") t "decrease indent of single line"))
+```
 
-    $ cp .stack-work/install/x86_64-linux/lts-6.26/7.10.3/bin/mymodule.so ~/.emacs.d/lisp/
+## Package repository
 
-## 8. Load your shared library
+Hamacs packages can be discovered by `Hamacs` category keyword on
+[Hackage](https://hackage.haskell.org/packages/search?terms=%28category%3A+Emacs%29):
 
-    (require 'mymodule)
+> (category: Hamacs)
