@@ -1,3 +1,4 @@
+{-# LANGUAGE MultilineStrings #-}
 module HaPack where
 
 import Emacs --  (mkFunctionFromCallable, message, funcall2)
@@ -9,6 +10,9 @@ import Test.Tasty.HUnit
 fooBar :: Int -> Int
 fooBar n = n + 33
 
+{-# ANN fooBar0 (EmDocString """First line
+                                Second line
+                                3rd line""") #-}
 fooBar0 :: Int
 fooBar0 = 3333
 
@@ -60,5 +64,6 @@ runHamacsApiTests = withRunInIO $ \run -> runTestsWithoutExit (tests run)
       , testGroup "DocString"
         [ testCase "sayHello" $ ("sayHello docstring" @=?) =<< run (documentation =<< intern "hapack-sayHello")
         , testCase "fooBar" $ ("" @=?) =<< run (documentation =<< intern "hapack-fooBar")
+        , testCase "multiline" $ ("First line\nSecond line\n3rd line" @=?) =<< run (documentation =<< intern "hapack-fooBar0")
         ]
       ]
