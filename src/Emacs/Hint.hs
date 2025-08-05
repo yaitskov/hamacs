@@ -12,10 +12,10 @@ module Emacs.Hint where
 import Data.Text.Foreign qualified as TF
 import Emacs.Core
 import Emacs.Function ( setFunction )
-import Emacs.Hint.Type ( EmacsHintM, HintFunctionStub )
+import Emacs.Hint.Type
 import Emacs.Prelude
 import Foreign.C.String ( CString )
-import Foreign.C.Types ( CPtrdiff(..) )
+import Foreign.C.Types ( CInt(..), CPtrdiff(..) )
 import Foreign.Marshal.Array ( peekArray )
 import Foreign.Ptr ( FunPtr )
 import Foreign.StablePtr ( newStablePtr, StablePtr )
@@ -60,7 +60,19 @@ foreign import ccall _make_function
   -> StablePtr ()
   -> IO EmacsValue
 
-mkHintFunction :: ([EmacsValue] -> EmacsM EmacsValue) -> Int -> Int -> Text -> EmacsHintM EmacsValue
+foreign import ccall _make_interactive
+  :: EmacsEnv
+  -> EmacsValue
+  -> EmacsValue
+  -> IO CInt
+
+makeInteractive :: MonadEmacs m => EmacsValue -> m ()
+makeInteractive f = do
+  ee <- getEmacsCtx
+  n <- mkNil
+  void $ liftIO (_make_interactive ee f n)
+
+mkHintFunction :: ([EmacsValue] -> EmacsM EmacsValue) -> Int -> Int -> Text -> EmacsM EmacsValue
 mkHintFunction f minArity' maxArity' doc' = do
   let minArity = fromIntegral minArity' :: CPtrdiff
       maxArity = fromIntegral maxArity' :: CPtrdiff
@@ -80,10 +92,10 @@ mkHintFunction f minArity' maxArity' doc' = do
           Left se -> throwIO se
           Right r -> pure r
 
-mkHintFunctionFromCallable :: Callable f => f -> EmacsHintM EmacsValue
-mkHintFunctionFromCallable f = do
+mkHintFunctionFromCallable :: Callable f => EmDocString -> f -> EmacsM EmacsValue
+mkHintFunctionFromCallable meta f = do
   let a = arity f
-  mkHintFunction func a a "Emacs Symbol Docs"
+  mkHintFunction func a a (unEmDocString meta)
   where
     func :: [EmacsValue] -> EmacsM EmacsValue
     func es = do
@@ -121,15 +133,21 @@ instance {-# OVERLAPPING #-} (FromEmacsValue a, Callable b) => Callable (a -> b)
   call _ [] = pure $ Left "Too less arguments"
 
 
-defunHint :: Callable f => Text -> f -> EmacsHintM ()
+defunHint :: Callable f => Text -> f ->  ReaderT DefunHintCtx IO ()
 defunHint name f = do
-  sn <- intern name
-  setFunction sn =<< mkHintFunctionFromCallable f
+  DefunHintCtx ctx meta <- ask
+  liftIO $ runReaderT (go meta) ctx
+  where
+    go meta = do
+      sn <- intern name
+      funBody <- mkHintFunctionFromCallable meta.emDocString f
+      mapM_ (\_ -> makeInteractive funBody) meta.isInteractive
+      setFunction sn funBody
 
 instance MonadEmacs EmacsM where
   callOverEmacs (EmacsSymbol s) actions = do
     q <- asks (.hintQueue)
-    pa <- mapM (toEv . (:[]) <=< mkHintFunctionFromCallable) actions
+    pa <- mapM (toEv . (:[]) <=< mkHintFunctionFromCallable mempty) actions
     tid <- forkIO do
       -- eval would cause another call from Emacs
       catchAny

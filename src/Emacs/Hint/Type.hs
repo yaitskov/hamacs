@@ -27,27 +27,10 @@ data Hint
 
 newtype GhcDbPath = GhcDbPath { unGhcDbPath :: FilePath }  deriving (Show, Eq)
 
-type EmacsHintM = EmacsM
+data EmacsFunAnnotations
+  = EmacsFunAnnotations
+    { isInteractive :: Maybe Interactive
+    , emDocString :: EmDocString
+    } deriving (Show, Eq, Generic)
 
--- data EmacsHintConf
---   = EmacsHintConf
---   { packageName :: Text
---   , packageInQueue :: TQueue HintReq
---   , emacsCtxM :: Ctx
---   }
-
--- newtype EmacsHintM a = EmacsHintM (ReaderT EmacsHintConf IO a)
---   deriving newtype (Applicative, Functor, Monad, MonadIO, MonadUnliftIO)
-
--- instance MonadReader EmacsHintConf EmacsHintM where
---    ask = EmacsHintM ask
---    local f (EmacsHintM m) = EmacsHintM (local f m)
-
--- instance HasEmacsCtx EmacsHintM where
---   getEmacsCtx = EmacsHintM (asks (.emacsCtxM))
-
--- data HintQueueWorkerConf
---   = HintQueueWorkerConf
---   { packageName :: Text
---   , packageInQueue :: TQueue HintReq
---   }
+data DefunHintCtx = DefunHintCtx Ctx EmacsFunAnnotations deriving (Generic)

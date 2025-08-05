@@ -25,5 +25,5 @@
 (cl-assert (eq 3333 (hapack-fooBar0FromSaveExcursion)) t)
 (hapack-runHamacsApiTests)
 (cl-assert (null (commandp 'hapack-fooBar)))
-; (cl-assert (commandp 'hapack-sayHello))
+(cl-assert (commandp 'hapack-sayHello))
 ;;; run.el ends here

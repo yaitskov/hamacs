@@ -9,6 +9,7 @@ import Distribution.Types.PackageName ( unPackageName )
 import Emacs.Type
 import Emacs.Package.Cabal
 import Emacs.Internal ()
+import Emacs.Hint.Type ( DefunHintCtx(..), EmacsFunAnnotations(EmacsFunAnnotations) )
 import Emacs.Prelude
 import Emacs.Text ( trimX )
 import Language.Haskell.Interpreter (ModuleName, MonadInterpreter, ModuleElem (Fun), Id)
@@ -24,9 +25,20 @@ modElemToFun = \case Fun x -> Just x ; _ -> Nothing
 modFunctions :: MonadInterpreter m => ModuleName -> m [Id]
 modFunctions mm = mapMaybe modElemToFun <$> HI.getModuleExports mm
 
+funInfo :: MonadInterpreter m => Id -> m EmacsFunAnnotations
+funInfo fName = do
+  docs :: [EmDocString] <- HI.getValAnnotations (undefined) fName
+  putStrLn $ "funInfo " <> show fName <> " docs " <> show docs
+  EmacsFunAnnotations
+    <$> (listToMaybe <$> HI.getValAnnotations undef fName)
+    <*> (mconcat <$> HI.getValAnnotations undef fName)
+  where
+    undef :: forall a . a
+    undef = error $ "fail to gen annotations for " <> toText fName
+
 isEmacsCompatibleFunction :: MonadInterpreter m => Id -> m Bool
 isEmacsCompatibleFunction fName =
-  HI.typeChecksWithDetails ("mkHintFunctionFromCallable " <> fName) >>= \case
+  HI.typeChecksWithDetails ("mkHintFunctionFromCallable mempty " <> fName) >>= \case
     Left es -> do
       putStrLn $ "Skip " <> fName <> " due: " <> show es
       pure False
@@ -83,10 +95,11 @@ runHintOn customHintArgs cabalFile q = catchAny go oops
                 printDoc $ vsep ["Among them Emacs compatible:", tab (vsep emacsCompatibleOnes)] <> linebreak
 
                 forM_ emacsCompatibleOnes $ \(fnName, fqFnName) -> do
+                  finf <- funInfo fqFnName
                   let cmd :: Text = "defunHint \"" <> packName <> "-" <>
                         toText (trimX '(' ')' fnName) <> "\" " <> toText fqFnName
-                  r2 :: EmacsM () <- HI.unsafeInterpret (toString cmd)  "EmacsM ()"
-                  liftIO (runReaderT r2 $ Ctx emcEnv q)
+                  r2 :: ReaderT DefunHintCtx IO () <- HI.unsafeInterpret (toString cmd)  "ReaderT DefunHintCtx IO ()"
+                  liftIO (runReaderT r2 (DefunHintCtx (Ctx emcEnv q) finf))
 
               r :: HintQueueRunner <- HI.unsafeInterpret "runHintQueue" "HintQueueRunner"
               liftIO (runReaderT r q)

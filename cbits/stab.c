@@ -50,6 +50,10 @@ emacs_value _make_function(emacs_env *env,
                             data);
 }
 
+void _make_interactive (emacs_env *env, emacs_value function, emacs_value spec) {
+  env->make_interactive(env, function, spec);
+}
+
 emacs_value _funcall(emacs_env *env,
                      emacs_value function,
                      ptrdiff_t nargs,
