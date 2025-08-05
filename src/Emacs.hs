@@ -8,6 +8,7 @@ import Emacs.Command as X
 import Emacs.Hint ()
 import Emacs.Api.Lisp.Replace as X
 import Emacs.Api.Native.Buffer as X
+import Emacs.Api.Native.Doc as X
 import Emacs.Api.Native.Eval as X
 import Emacs.Api.Native.Package as X
 import Emacs.Api.Native.Search as X

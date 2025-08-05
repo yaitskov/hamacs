@@ -48,6 +48,7 @@ library
         Emacs.Api.Lisp.Subr
         Emacs.Api.Lisp.Replace
         Emacs.Api.Native.Buffer
+        Emacs.Api.Native.Doc
         Emacs.Api.Native.Eval
         Emacs.Api.Native.Package
         Emacs.Api.Native.Search

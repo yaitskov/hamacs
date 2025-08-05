@@ -16,6 +16,7 @@ sayHelloInEmacs :: Text -> EmacsM ()
 sayHelloInEmacs msg = void $ funcall2 "message" ("Interpolate here: %s" :: Text) msg
 
 {-# ANN sayHello Interactive #-}
+{-# ANN sayHello (EmDocString "sayHello docstring") #-}
 sayHello :: EmacsM ()
 sayHello = putStrLn "Hello from HINT"
 
@@ -46,6 +47,7 @@ runHamacsApiTests = withRunInIO $ \run -> runTestsWithoutExit (tests run)
       [ testGroup "commandp"
         [ testCommandP run True "set-mark-command"
         , testCommandP run False "message"
+        , testCommandP run True "hapack-sayHello"
         ]
       , testGroup "save-excursion"
         [ testCase "ret OK from HS" $ ("OK" @=?) =<< run (saveExcursion retOK)
@@ -54,5 +56,9 @@ runHamacsApiTests = withRunInIO $ \run -> runTestsWithoutExit (tests run)
         , testCase "recursive 3 HS" $ ("OK" @=?) =<< run (saveExcursion
                                                           (saveExcursion
                                                            (saveExcursion retOK)))
+        ]
+      , testGroup "DocString"
+        [ testCase "sayHello" $ ("sayHello docstring" @=?) =<< run (documentation =<< intern "hapack-sayHello")
+        , testCase "fooBar" $ ("" @=?) =<< run (documentation =<< intern "hapack-fooBar")
         ]
       ]
