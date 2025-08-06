@@ -16,4 +16,5 @@ jobs:
         name: hamacs
         authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
     - run:
-        nix-build --extra-experimental-features pipe-operators
+        cd ./packages/hapack && ./test.sh
+        # nix-build --extra-experimental-features pipe-operators

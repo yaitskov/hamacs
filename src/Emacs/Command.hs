@@ -1,12 +1,11 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Emacs.Command
  ( setCommand
  , defcommand'
  ) where
 
-import Data.Text
 import Emacs.Core
-import Emacs.Prelude
+import Emacs.Prelude ( ($), Text, void, (=<<) )
+
 
 setCommand :: MonadEmacs m => Text -> InteractiveForm -> EmacsValue -> m ()
 setCommand fname _form f = do
@@ -17,10 +16,10 @@ setCommand fname _form f = do
 
 defcommand'
   :: Text
-  -> EmDoc
+  -> EmDocString
   -> InteractiveForm
   -> Arity
   -> ([EmacsValue] -> NativeEmacsM EmacsValue)
   -> NativeEmacsM ()
-defcommand' fname (EmDoc doc') form (Arity comArity) f =
-  setCommand fname form =<< mkFunction f comArity comArity doc'
+defcommand' fname eds form (Arity comArity) f =
+  setCommand fname form =<< mkFunction f comArity comArity eds

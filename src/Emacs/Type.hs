@@ -112,7 +112,6 @@ type EFunctionStub
 
 data InteractiveForm = InteractiveNoArgs
 
-newtype EmDoc = EmDoc Text
 newtype Arity = Arity Int
 
 class    AsEmacsValue s             where asEmacsValue :: s -> EmacsValue

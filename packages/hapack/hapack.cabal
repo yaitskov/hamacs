@@ -3,7 +3,6 @@ name: hapack
 version: 0.0.1
 build-type: Simple
 license: GPL-3.0-only
-license-file: LICENSE
 copyright: 2025 Daniil Iaitskov
 maintainer: dyaitskov@gmail.com
 category: Emacs
@@ -15,9 +14,13 @@ library
   build-depends:
     , base >= 4.8 && < 5
     , hamacs < 1
+    , relude
+    , tasty
+    , tasty-hunit
   default-language: GHC2024
   default-extensions:
     OverloadedRecordDot
     OverloadedStrings
     NoTemplateHaskell
+    NoImplicitPrelude
   hs-source-dirs: .

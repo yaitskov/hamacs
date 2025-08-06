@@ -34,7 +34,7 @@ let
     });
   emacs-integration-test = drv:
     drv.overrideAttrs (oa: {
-      buildInputs = (oa.builtInputs or []) ++ [np.emacs np.tree];
+      buildInputs = (oa.builtInputs or []) ++ [np.emacs];
       checkPhase = (oa.checkPhase or "") + ''
         echo Emacs Integration Tests
         export NIX_GHC_LIBDIR=${(hp.ghcWithPackages (h: hamacs.getCabalDeps.libraryHaskellDepends))}/lib/ghc-9.12.2/lib

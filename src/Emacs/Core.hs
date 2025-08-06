@@ -15,10 +15,12 @@ module Emacs.Core
   , print
   ) where
 
-import Emacs.Internal as X
-import Emacs.Prelude hiding (print)
+
 import Emacs.Api.Native.Package ( provide )
 import Emacs.Api.Native.String ( message, print, evalString )
+import Emacs.Internal as X
+import Emacs.Prelude hiding (print)
+
 
 defmodule :: Text -> NativeEmacsM a -> EmacsModule
 defmodule name mod' ert = do

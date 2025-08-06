@@ -48,13 +48,13 @@ stableNullPtr :: StablePtr Void
 stableNullPtr = unsafeCoerce nullPtr
 
 mkFunction :: (MonadIO m, HasEmacsCtx m) =>
-  ([EmacsValue] -> NativeEmacsM EmacsValue) -> Int -> Int -> Text -> m EmacsValue
-mkFunction f minArity' maxArity' doc' = do
+  ([EmacsValue] -> NativeEmacsM EmacsValue) -> Int -> Int -> EmDocString -> m EmacsValue
+mkFunction f minArity' maxArity' (EmDocString eds) = do
   let minArity = fromIntegral minArity' :: CPtrdiff
       maxArity = fromIntegral maxArity' :: CPtrdiff
   stubp <- liftIO (wrapEFunctionStub stub)
   env <- getEmacsCtx
-  checkExitStatus $ liftIO (TF.withCString doc' $ \emDoc ->
+  checkExitStatus $ liftIO (TF.withCString eds $ \emDoc ->
     _make_function env minArity maxArity stubp emDoc stableNullPtr)
   where
     stub :: EFunctionStub
@@ -89,10 +89,10 @@ errorHandle env action =
       setter env a0 a1
       return a0
 
-mkFunctionFromCallable :: MonadEmacs m => NativeCallable f => f -> m EmacsValue
-mkFunctionFromCallable f = do
+mkFunctionFromCallable :: MonadEmacs m => NativeCallable f => EmDocString -> f -> m EmacsValue
+mkFunctionFromCallable eds f = do
   let a = arity f
-  mkFunction func a a ""
+  mkFunction func a a eds
   where
     func :: [EmacsValue] -> NativeEmacsM EmacsValue
     func es = do
@@ -144,7 +144,7 @@ instance ToEmacsFunction EmacsFunction where
   toEmacsFunction = pure
 
 instance (FromEmacsValue a, NativeCallable b) => ToEmacsFunction (a -> b) where
-  toEmacsFunction f = EmacsFunction <$> mkFunctionFromCallable f
+  toEmacsFunction f = EmacsFunction <$> mkFunctionFromCallable mempty f
 
 funcall0 :: MonadEmacs m => Text -> m EmacsValue
 funcall0 fname =
@@ -284,5 +284,5 @@ instance ToEmacsValue x => ToEmacsList [x] where
 
 instance MonadEmacs NativeEmacsM where
   callOverEmacs (EmacsSymbol s) actions = do
-    pas <- mapM (toEv . (:[]) <=< mkFunctionFromCallable) actions
+    pas <- mapM (toEv . (:[]) <=< mkFunctionFromCallable mempty) actions
     fromEv =<< funcall1 "eval" (s : pas)

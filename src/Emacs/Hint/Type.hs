@@ -1,15 +1,19 @@
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Emacs.Hint.Type where
 
-
+import Data.FileEmbed
 import Emacs.Core
 import Emacs.Prelude
-import Foreign.C.Types
-import Foreign.Ptr
-import Foreign.StablePtr
+import Foreign.C.Types ( CPtrdiff )
+import Foreign.Ptr ( Ptr )
+import Foreign.StablePtr ( StablePtr )
 import UnliftIO.Concurrent (ThreadId)
 import UnliftIO.STM (TQueue)
+
+genNixGhcLibDirFileContent :: ByteString
+genNixGhcLibDirFileContent = $(embedFile "src/gen-nix-ghc-libdir.nix")
 
 type HintFunctionStub
   = EmacsEnv

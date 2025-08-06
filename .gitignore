@@ -3,7 +3,9 @@
 /dist-newstyle
 *#
 *.so
+emacs
 /design
 log.org
-/result*
+result
+result-2
 /packages/rectangular-shift

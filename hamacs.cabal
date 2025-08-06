@@ -34,6 +34,7 @@ source-repository head
 
 library
     default-extensions:
+        BlockArguments
         ImportQualifiedPost
         LambdaCase
         NoImplicitPrelude
@@ -88,6 +89,8 @@ library
         Emacs.Type.ToEmacsSymbolInstances
         Emacs.Type.ToEmacsValueInstances
         Emacs.Validation
+    other-modules:
+        Paths_hamacs
     build-depends:
       , Cabal < 4
       , Cabal-syntax < 4
@@ -97,12 +100,14 @@ library
       , containers < 1
       , directory < 2
       , exceptions
+      , file-embed < 1
       , filepath < 2
       , generic-lens < 3
       , hint
       , lens < 6
-      , pretty-simple < 5
       , mtl
+      , pretty-simple < 5
+      , process < 2
       , refined < 1
       , relude
       , stm

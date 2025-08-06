@@ -1,5 +1,5 @@
+{-# LANGUAGE MultilineStrings #-}
 {-# LANGUAGE OverloadedStrings #-}
-
 module Emacs.Init where
 
 import Data.Map.Strict qualified as M
@@ -16,7 +16,7 @@ import Foreign.C.Types ( CInt(CInt) )
 import System.FilePath ( (</>), (<.>) )
 import System.IO.Unsafe ( unsafePerformIO )
 import UnliftIO.Concurrent ( forkIO, modifyMVar_)
-import UnliftIO.Directory ( doesFileExist )
+import UnliftIO.Directory ( doesFileExist, makeAbsolute )
 import UnliftIO.STM ( writeTQueue, atomically, newTQueueIO, TQueue )
 
 foreign export ccall "emacs_module_init" emacsModuleInit :: EmacsModule
@@ -35,7 +35,7 @@ findHamacsPackageCabal packNameTxt = do
   candidiates <- findMOf each (\p -> doesFileExist . toString $ p </> packName </> packName <.> "cabal") . fmap T.unpack =<< loadPath
   case candidiates of
     Nothing -> fail $ "Package " <> packName <> " is not found in load-path"
-    Just x -> pure . CabalFilePath $ x </> packName </> packName <.> "cabal"
+    Just x -> CabalFilePath <$> makeAbsolute (x </> packName </> packName <.> "cabal")
   where
     packName = T.unpack packNameTxt
 
@@ -43,9 +43,22 @@ emacsModuleInit :: EmacsModule
 emacsModuleInit = defmodule "hamacs" $ do
   mapM_ (require <=< intern) ["subr-x", "package"]
   defun "hamacs-load-package" loadHamacsPackage
+    """hamacs-load-package - load Hamacs package and its dependencies.
+       It bind function defined in exporting modules
+       prefixed with the package name and dash.
+    """
+
+  defun "hamacs-load-package-with-hint-args" loadHamacsPackageWithHintArgs
+    """hamacs-load-package-with-hint-args - is used only for testing.
+       Dependency resolution and hint argument generaction (i.e package-db) is
+       disabled for packages loaded by this function.
+    """
   where
-    loadHamacsPackage :: [Text] -> Text -> NativeEmacsM Text
-    loadHamacsPackage customHintArgs hmPgkName = do
+    loadHamacsPackage :: Text -> NativeEmacsM Text
+    loadHamacsPackage = loadHamacsPackageWithHintArgs []
+
+    loadHamacsPackageWithHintArgs :: [Text] -> Text -> NativeEmacsM Text
+    loadHamacsPackageWithHintArgs customHintArgs hmPgkName = do
       cabalFile <- findHamacsPackageCabal hmPgkName
       pkgQueue <- newTQueueIO
       responseMvar <- newEmptyMVar
